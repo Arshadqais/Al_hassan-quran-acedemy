@@ -1,24 +1,24 @@
-from pathlib import Path
+"""Database configuration. Process configuration overrides the private .env file."""
 
+import os
+from pathlib import Path
 from dotenv import dotenv_values
 from sqlalchemy import URL, text
-from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-env = dotenv_values(Path(__file__).resolve().parents[2] / ".env")
-
-DATABASE_URL = URL.create(
+env = {**dotenv_values(Path(__file__).resolve().parents[2] / ".env"), **os.environ}
+DATABASE_URL = env.get("DATABASE_URL") or URL.create(
     drivername="postgresql+asyncpg",
-    username=env["DATABASE_USER"],
-    password=env["DATABASE_PASSWORD"],
-    host=env["DATABASE_HOST"],
-    port=int(env["DATABASE_PORT"]),
-    database=env["DATABASE_NAME"],
+    username=env.get("DATABASE_USER", "academy"),
+    password=env.get("DATABASE_PASSWORD"),
+    host=env.get("DATABASE_HOST", "127.0.0.1"),
+    port=int(env.get("DATABASE_PORT", "5432")),
+    database=env.get("DATABASE_NAME", "quran_academy"),
 )
-
 engine = create_async_engine(DATABASE_URL, pool_pre_ping=True)
+Session = async_sessionmaker(engine, expire_on_commit=False)
 
 
 async def check_database():
     async with engine.connect() as connection:
-        result = await connection.execute(text("SELECT 1"))
-        return result.scalar_one() == 1
+        return (await connection.execute(text("SELECT 1"))).scalar_one() == 1

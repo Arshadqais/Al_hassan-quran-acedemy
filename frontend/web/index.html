@@ -18,21 +18,24 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="Al Hassan Online Quran Academy — Quran recitation, Tajweed, memorization, and a connected learning community.">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="frontend">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <meta name="apple-mobile-web-app-title" content="Al Hassan">
+  <meta name="theme-color" content="#145B45">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="icon" type="image/svg+xml" href="brand.svg"/>
 
-  <title>frontend</title>
+  <title>Al Hassan | Online Quran Academy</title>
   <link rel="manifest" href="manifest.json">
 </head>
-<body>
+<body style="margin:0;background:#f8f7f2">
+  <noscript>Please enable JavaScript to open Al Hassan Online Quran Academy.</noscript>
+  <div id="loading" role="status" style="position:absolute;inset:0;display:grid;place-content:center;text-align:center;color:#145b45;font-family:Georgia,serif"><div style="font-size:30px">Al Hassan</div><p style="font:11px Arial;letter-spacing:3px">ONLINE QURAN ACADEMY</p><p style="font:12px Arial;color:#77867d">Preparing your learning space…</p></div>
+  <script>window.addEventListener("flutter-first-frame", () => document.getElementById("loading")?.remove());</script>
   <!--
     You can customize the "flutter_bootstrap.js" script.
     This is useful to provide a custom configuration to the Flutter loader

@@ -1,0 +1,86 @@
+name: Test and deploy academy website
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Flutter SDK
+        shell: bash
+        run: |
+          git clone --depth 1 --branch 3.47.8 https://github.com/flutter/flutter.git "$RUNNER_TEMP/flutter"
+          test "$(git -C "$RUNNER_TEMP/flutter" rev-parse HEAD)" = "737ba8f885dc774b53b442759999a312c9461e4e"
+          echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/flutter/bin/flutter" --version
+      - run: flutter pub get --enforce-lockfile
+        working-directory: frontend
+      - run: flutter analyze
+        working-directory: frontend
+      - run: flutter test
+        working-directory: frontend
+      - name: Build academy website
+        run: flutter build web --release --base-href /Al_hassan-quran-acedemy/ --no-web-resources-cdn --dart-define=API_BASE_URL="$ACADEMY_API_BASE_URL"
+        env:
+          ACADEMY_API_BASE_URL: ${{ vars.ACADEMY_API_BASE_URL }}
+        working-directory: frontend
+      - uses: actions/upload-pages-artifact@v3
+        if: github.event_name != 'pull_request'
+        with:
+          path: frontend/build/web
+  backend-tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: quran_academy_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d quran_academy_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements-dev.txt
+        working-directory: backend
+      - run: python -m pytest tests -q
+        working-directory: backend
+      - name: Test with PostgreSQL
+        run: python -m pytest tests -q
+        working-directory: backend
+        env:
+          ACADEMY_TEST_DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/quran_academy_test
+      - name: Check initial migration
+        run: |
+          python -m alembic upgrade head
+          python -m alembic check
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/quran_academy_test
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: [verify, backend-tests]
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

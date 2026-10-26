@@ -1,0 +1,20 @@
+# Example for an Ubuntu academy server; install under /etc/systemd/system after review.
+[Unit]
+Description=Al Hassan Quran Academy API
+After=network-online.target docker.service
+Wants=network-online.target
+[Service]
+User=quranacademy
+Group=quranacademy
+WorkingDirectory=/srv/al-hassan/backend
+EnvironmentFile=/srv/al-hassan/backend/.env
+ExecStart=/srv/al-hassan/backend/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 1 --proxy-headers --forwarded-allow-ips 127.0.0.1
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/al-hassan/backend
+[Install]
+WantedBy=multi-user.target
