@@ -70,9 +70,20 @@ jobs:
         working-directory: backend
         env:
           DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/quran_academy_test
+  local-launcher-tests:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m unittest discover -s scripts/tests -v
   deploy:
     if: github.event_name != 'pull_request'
-    needs: [verify, backend-tests]
+    needs: [verify, backend-tests, local-launcher-tests]
     runs-on: ubuntu-latest
     permissions:
       pages: write

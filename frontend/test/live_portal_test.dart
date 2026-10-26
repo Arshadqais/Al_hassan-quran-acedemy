@@ -7,6 +7,9 @@ import 'package:frontend/live_portal.dart';
 import 'package:frontend/main.dart';
 
 void main() {
+  test('Debug defaults to the local API for plain flutter run', () {
+    expect(academyApiBaseUrl, 'http://127.0.0.1:8000');
+  });
   test(
     'API rejects unconfigured servers and expires tokens on unauthorized responses',
     () async {

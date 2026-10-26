@@ -7,7 +7,12 @@ import 'package:http/http.dart' as http;
 const _green = Color(0xFF145B45);
 const _cream = Color(0xFFF8F7F2);
 const _muted = Color(0xFF77867D);
-const academyApiBaseUrl = String.fromEnvironment('API_BASE_URL');
+// Local debug sessions use the local API. Published builds require an explicit
+// HTTPS backend URL and never point visitors at their own localhost.
+const academyApiBaseUrl = String.fromEnvironment(
+  'API_BASE_URL',
+  defaultValue: kDebugMode ? 'http://127.0.0.1:8000' : '',
+);
 
 class AcademyApi {
   final String baseUrl;

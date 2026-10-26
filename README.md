@@ -23,6 +23,38 @@ The public website includes an interactive demonstration with fictional data. Ch
 
 Sessions are opaque, expire after eight hours, and can be revoked. Passwords use salted PBKDF2-SHA256. Browser session tokens are kept only in memory. Parents see linked children, teachers see assigned students, and students see their own records. Changing an ID in a URL does not bypass those checks.
 
+## Quick local start (macOS / Linux)
+
+Install/open **Docker Desktop**, install Python 3.12+ and Flutter 3.47.8, then run these from your checkout (replace the path if yours is elsewhere):
+
+```bash
+cd ~/Desktop/Al_hassan-quran-acedemy
+git pull origin main
+python3 scripts/local.py setup
+python3 scripts/local.py create-admin
+python3 scripts/local.py run
+```
+
+Open **http://127.0.0.1:8090** and choose **Academy sign in**. Use the administrator credentials you just created. `run` starts PostgreSQL, waits for it, applies migrations, starts the API, checks its database health, and starts Flutter with the correct local API URL and CORS origins. Keep that terminal open; Ctrl+C stops the API and web runner it started and retains database data.
+
+`setup` installs backend dependencies and refreshes the host Flutter test runner plus web artifacts. It creates a private `backend/.env` only when one does not exist. It preserves existing settings and database volumes. If an existing `.env` has a blank or different database password, set it to the password used when that PostgreSQL volume was initialized; the launcher reports that problem without resetting data. You only need `create-admin` for your first administrator.
+
+The launcher resolves project directories itself. It works from `backend` too: `python3 ../scripts/local.py run`. For ports already in use, choose `--api-port 18000 --web-port 18090`. The public GitHub Pages address is a separate deployment and cannot connect to PostgreSQL on your laptop.
+
+### Repair the errors from the macOS log
+
+- **Missing `darwin-x64/flutter_tester`:** run `python3 scripts/local.py repair-flutter`. This runs `flutter precache --universal --web --force` and frozen dependency resolution. A web build can pass even when the host binary required for widget tests is missing. Keep the Flutter installation native to your machine's architecture; do not copy another machine's Flutter cache.
+- **Connection refused on `127.0.0.1:5432`:** open Docker Desktop, wait for its engine, and run `python3 scripts/local.py database`. This starts PostgreSQL before applying migrations. `alembic check` checks an already running, migrated database; it does not start PostgreSQL.
+- **`cd: no such file or directory: frontend` / missing `pubspec.yaml`:** the shell was already in `backend`. Use the launcher from the repository root, or `python3 ../scripts/local.py check` from `backend`, instead of copying commands that assume another directory.
+- **Newer dependencies available / tree-shaken fonts / Wasm dry run:** these are informational messages. They did not cause the logged failures. Keep the committed lockfile; upgrading every package is not the repair.
+- **“The live academy server has not been connected” on GitHub Pages:** configure a public HTTPS API using the deployment steps below. Local debug runs default to `http://127.0.0.1:8000`, and the launcher sets it explicitly. Published builds require `ACADEMY_API_BASE_URL`; GitHub Pages hosts the frontend only.
+
+To run the complete local checks with the database prepared:
+
+```bash
+python3 scripts/local.py check
+```
+
 ## Run the website
 
 Use Flutter **3.47.8** (Dart 3.13.7), matching CI. The project supports web; native mobile platform projects are not included.
@@ -91,15 +123,14 @@ The API, database and GitHub Pages have separate lifecycles. Deploying the websi
 
 ## Validation
 
+From the repository root:
+
 ```bash
-cd frontend
-flutter analyze
-flutter test
-flutter build web --release --base-href /Al_hassan-quran-acedemy/ --no-web-resources-cdn
-cd ../backend
-.venv/bin/python -m pytest tests -q
-.venv/bin/python -m alembic check
+python3 scripts/local.py check
+python3 -m unittest discover -s scripts/tests -v
 ```
+
+If your terminal is already in `backend`, use `python3 ../scripts/local.py check`. The launcher handles all working directories, host Flutter artifacts, PostgreSQL readiness, migrations, frontend analysis/tests/build, and backend tests. Do not run Flutter commands from the backend folder.
 
 The backend suite defaults to an isolated, in-memory SQLite database. It can also use an isolated PostgreSQL database via `ACADEMY_TEST_DATABASE_URL`; its database name must end with `_test`. Tests delete and recreate academy tables in that test database. Never point tests at a real academy database.
 

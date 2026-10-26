@@ -4,15 +4,15 @@ services:
     container_name: quran_academy_db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: academy
+      POSTGRES_USER: ${DATABASE_USER:-academy}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: quran_academy
+      POSTGRES_DB: ${DATABASE_NAME:-quran_academy}
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:${DATABASE_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U academy -d quran_academy"]
+      test: ["CMD-SHELL", 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
       interval: 10s
       timeout: 5s
       retries: 5
