@@ -80,11 +80,12 @@ The admin command prompts for a name, email and password; there are no default p
 
 ## Publish through GitHub Pages
 
-1. Grant the connected GitHub account write access to this repository, or push from an authorized account. During implementation, `ReallIkram` had read access only, and Git rejected the push with HTTP 403.
-2. In the repository's **Settings → Pages**, set **Source → GitHub Actions**. Keep the existing repository name to use the target URL above.
-3. Push this project to `main`. `.github/workflows/pages.yml` analyzes and tests Flutter, checks the backend with SQLite and PostgreSQL, builds the website with its repository base path, and deploys the website when checks pass.
-4. For live sign-in, first deploy the backend separately over HTTPS, then add the non-secret repository variable `ACADEMY_API_BASE_URL`, for example `https://api.your-academy-domain.com`. Rerun the Pages workflow. Leave it empty for the public demo.
-5. On the backend, allow the origin `https://arshadqais.github.io` through `ACADEMY_ORIGINS`. Never put database passwords, session tokens, or LiveKit secrets in a frontend build or repository variable.
+1. The repository owner must open **Settings → Pages** and set **Source → GitHub Actions**. Keep the existing repository name to use the target URL above. The connected GitHub integration can push this project, but cannot enable Pages itself.
+2. Push this project to `main`. `.github/workflows/pages.yml` analyzes and tests Flutter, checks the backend with SQLite and PostgreSQL, builds the website with its repository base path, and deploys the website when checks pass.
+3. For live sign-in, first deploy the backend separately over HTTPS, then add the non-secret repository variable `ACADEMY_API_BASE_URL`, for example `https://api.your-academy-domain.com`. Rerun the Pages workflow. Leave it empty for the public demo.
+4. On the backend, allow the origin `https://arshadqais.github.io` through `ACADEMY_ORIGINS`. Never put database passwords, session tokens, or LiveKit secrets in a frontend build or repository variable.
+
+If the first deployment ran before Pages was enabled, rerun the failed deployment job or run the workflow manually after enabling it.
 
 The API, database and GitHub Pages have separate lifecycles. Deploying the website does not update a Python process on the academy server. See [server deployment and backups](docs/deployment.md).
 
