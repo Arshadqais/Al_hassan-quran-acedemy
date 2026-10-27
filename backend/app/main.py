@@ -3,6 +3,8 @@ from app.db.database import env
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api import router
+from app.quran import router as quran_router
+from app.realtime import router as realtime_router
 
 app = FastAPI(title="Quran Academy API", version="1.0.0")
 
@@ -45,6 +47,8 @@ if origins:
         allow_headers=["Authorization", "Content-Type"],
     )
 app.include_router(router)
+app.include_router(quran_router)
+app.include_router(realtime_router)
 
 
 @app.middleware("http")

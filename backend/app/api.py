@@ -11,6 +11,7 @@ from sqlalchemy import select, or_, and_, delete, func
 from sqlalchemy.exc import IntegrityError
 from starlette.concurrency import run_in_threadpool
 from app.db.database import env
+from app.realtime import notify_messages
 from app.models import (
     now,
     User,
@@ -531,6 +532,7 @@ async def send_message(
     item = Message(sender_id=user.id, **data.model_dump())
     session.add(item)
     await session.commit()
+    notify_messages(user.id, other.id)
     return serialize(item, "id sender_id recipient_id text created_at")
 
 
@@ -586,7 +588,7 @@ async def room_token(session_id: int, user=Depends(current_user), session=Depend
         or not secret
         or parsed.scheme != "wss"
         or not parsed.hostname
-        or parsed.username
+        or parsed.username is not None
     ):
         raise HTTPException(
             503, "Private video provider is not configured. No room has been created."

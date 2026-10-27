@@ -1,4 +1,7 @@
 import 'classroom.dart';
+import 'class_chat.dart';
+import 'quran_reader.dart';
+import 'message_events.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -84,7 +87,8 @@ class ApiFailure implements Exception {
 
 class LivePortal extends StatefulWidget {
   final AcademyApi? api;
-  const LivePortal({super.key, this.api});
+  final bool realtime;
+  const LivePortal({super.key, this.api, this.realtime = true});
   @override
   State<LivePortal> createState() => _LivePortalState();
 }
@@ -106,6 +110,11 @@ class _LivePortalState extends State<LivePortal> {
   bool busy = false, obscure = true;
   final loginForm = GlobalKey<FormState>();
   final compose = TextEditingController();
+  MessageEvents? chatEvents;
+  final sessionActive = ValueNotifier<bool>(false);
+  bool chatConnected = false,
+      refreshingChat = false,
+      pendingChatRefresh = false;
   String get role => user?['role'] as String? ?? '';
   bool get editor => ['admin', 'teacher'].contains(role);
   List<dynamic> get students =>
@@ -118,6 +127,7 @@ class _LivePortalState extends State<LivePortal> {
     'Classes',
     'Progress',
     'Attendance',
+    'Quran',
     'Resources',
     'Homework',
     'Messages',
@@ -127,6 +137,8 @@ class _LivePortalState extends State<LivePortal> {
   ];
   @override
   void dispose() {
+    chatEvents?.close();
+    sessionActive.dispose();
     api.close();
     compose.dispose();
     super.dispose();
@@ -154,7 +166,10 @@ class _LivePortalState extends State<LivePortal> {
           error = e is ApiFailure
               ? e.message
               : 'Could not reach the academy server. Check your connection and try again.';
-          if (api.token == null) user = null;
+          if (api.token == null) {
+            user = null;
+            clearPrivateState();
+          }
         });
       }
     } finally {
@@ -170,14 +185,96 @@ class _LivePortalState extends State<LivePortal> {
         method: 'POST',
         body: {'email': email.trim(), 'password': password},
       );
+      clearPrivateState();
       api.token = data['token'] as String;
       password = '';
       user = Map<String, dynamic>.from(data['user'] as Map);
+      sessionActive.value = true;
       await refresh();
+      startChat();
     });
   }
 
+  void startChat() {
+    chatEvents?.close();
+    if (!widget.realtime || api.token == null) return;
+    chatEvents = MessageEvents(
+      baseUrl: api.baseUrl,
+      token: api.token!,
+      onChanged: refreshChat,
+      onConnected: (value) {
+        if (mounted) setState(() => chatConnected = value);
+      },
+      onExpired: () {
+        if (mounted) {
+          setState(() {
+            api.token = null;
+            user = null;
+            clearPrivateState();
+            error = 'Your session expired. Please sign in again.';
+          });
+        }
+      },
+    )..connect();
+  }
+
+  void clearPrivateState() {
+    sessionActive.value = false;
+    chatEvents?.close();
+    chatConnected = false;
+    pendingChatRefresh = false;
+    users = [];
+    classes = [];
+    attendance = [];
+    homework = [];
+    resources = [];
+    contacts = [];
+    progress = [];
+    messages = [];
+    report = {};
+    studentId = null;
+    contactId = null;
+    compose.clear();
+    page = 'Overview';
+  }
+
+  Future<void> refreshChat() async {
+    if (user == null || api.token == null) return;
+    if (refreshingChat) {
+      pendingChatRefresh = true;
+      return;
+    }
+    refreshingChat = true;
+    final current = contactId, owner = api.token;
+    try {
+      final data = current == null
+          ? null
+          : await api.call('/messages/$current');
+      if (mounted &&
+          api.token == owner &&
+          current == contactId &&
+          data != null) {
+        setState(() => messages = data as List);
+      }
+    } catch (_) {
+      if (api.token == null && mounted) {
+        setState(() {
+          user = null;
+          clearPrivateState();
+          error = 'Please sign in again.';
+        });
+      }
+    } finally {
+      refreshingChat = false;
+      if (pendingChatRefresh) {
+        pendingChatRefresh = false;
+        refreshChat();
+      }
+    }
+  }
+
   Future<void> refresh() async {
+    final owner = api.token;
     final results = await Future.wait([
       api.call('/users'),
       api.call('/classes'),
@@ -186,30 +283,41 @@ class _LivePortalState extends State<LivePortal> {
       api.call('/resources'),
       api.call('/contacts'),
     ]);
-    users = results[0] as List;
-    classes = results[1] as List;
-    attendance = results[2] as List;
-    homework = results[3] as List;
-    resources = results[4] as List;
-    contacts = results[5] as List;
-    if (!students.any((s) => s['id'] == studentId)) {
-      studentId = students.isEmpty ? null : students.first['id'] as int;
-    }
-    if (!contacts.any((c) => c['id'] == contactId)) {
-      contactId = contacts.isEmpty ? null : contacts.first['id'] as int;
-    }
-    progress = studentId == null
+    final nextUsers = results[0] as List, nextContacts = results[5] as List;
+    final children = nextUsers.where((u) => u['role'] == 'student').toList();
+    final nextStudent = children.any((u) => u['id'] == studentId)
+        ? studentId
+        : children.isEmpty
+        ? null
+        : children.first['id'] as int;
+    final nextContact = nextContacts.any((c) => c['id'] == contactId)
+        ? contactId
+        : nextContacts.isEmpty
+        ? null
+        : nextContacts.first['id'] as int;
+    final nextProgress = nextStudent == null
         ? []
-        : await api.call('/students/$studentId/progress') as List;
-    messages = contactId == null
+        : await api.call('/students/$nextStudent/progress') as List;
+    final nextMessages = nextContact == null
         ? []
-        : await api.call('/messages/$contactId') as List;
-    if (role == 'admin') {
-      report = Map<String, dynamic>.from(
-        await api.call('/admin/reports') as Map,
-      );
-    }
-    if (mounted) setState(() {});
+        : await api.call('/messages/$nextContact') as List;
+    final nextReport = role == 'admin'
+        ? Map<String, dynamic>.from(await api.call('/admin/reports') as Map)
+        : <String, dynamic>{};
+    if (!mounted || owner != api.token || user == null) return;
+    setState(() {
+      users = nextUsers;
+      classes = results[1] as List;
+      attendance = results[2] as List;
+      homework = results[3] as List;
+      resources = results[4] as List;
+      contacts = nextContacts;
+      progress = nextProgress;
+      messages = nextMessages;
+      report = nextReport;
+      studentId = nextStudent;
+      contactId = nextContact;
+    });
   }
 
   Future<void> save(
@@ -292,10 +400,9 @@ class _LivePortalState extends State<LivePortal> {
                 ? null
                 : () => execute(() async {
                     await api.call('/auth/logout', method: 'POST');
+                    clearPrivateState();
                     api.token = null;
                     user = null;
-                    users = [];
-                    messages = [];
                     password = '';
                   }),
             child: const Text('Sign out'),
@@ -542,6 +649,7 @@ class _LivePortalState extends State<LivePortal> {
     'Progress' => progressPage(),
     'Attendance' => attendancePage(),
     'Resources' => resourcePage(),
+    'Quran' => QuranReader(fetch: (path) => api.call(path)),
     'Homework' => homeworkPage(),
     'Messages' => messagePage(),
     'Feedback' => feedbackPage(),
@@ -854,6 +962,36 @@ class _LivePortalState extends State<LivePortal> {
                             token: data['token'] as String,
                             title: c['title'] as String,
                             canShareScreen: editor,
+                            sessionActive: sessionActive,
+                            chat: ClassChat(
+                              baseUrl: api.baseUrl,
+                              token: api.token!,
+                              fetch: (path) async {
+                                try {
+                                  return await api.call(path);
+                                } finally {
+                                  if (api.token == null) {
+                                    sessionActive.value = false;
+                                  }
+                                }
+                              },
+                              send: (recipient, text) async {
+                                try {
+                                  await api.call(
+                                    '/messages',
+                                    method: 'POST',
+                                    body: {
+                                      'recipient_id': recipient,
+                                      'text': text,
+                                    },
+                                  );
+                                } finally {
+                                  if (api.token == null) {
+                                    sessionActive.value = false;
+                                  }
+                                }
+                              },
+                            ),
                           ),
                         ),
                       );
@@ -1115,7 +1253,16 @@ class _LivePortalState extends State<LivePortal> {
     children: [
       heading(
         'Messages',
-        'Private conversations with your authorized academy contacts. Refresh to receive new messages.',
+        'Private conversations with your authorized academy contacts. Live updates reconnect automatically.',
+      ),
+      Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Text(
+          chatConnected
+              ? 'Live chat connected'
+              : 'Reconnecting live chat… Refresh is also available.',
+          style: const TextStyle(fontSize: 11, color: _muted),
+        ),
       ),
       if (contacts.isEmpty)
         blank(
@@ -1282,6 +1429,7 @@ class _LivePortalState extends State<LivePortal> {
                               'new_password': data['New password'],
                             },
                           );
+                          clearPrivateState();
                           api.token = null;
                           user = null;
                           password = '';

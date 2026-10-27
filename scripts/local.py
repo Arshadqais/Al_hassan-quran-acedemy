@@ -11,6 +11,8 @@ import socket
 import subprocess
 import sys
 import time
+import threading
+import webbrowser
 import urllib.error
 import urllib.request
 
@@ -72,7 +74,7 @@ def settings():
         **{
             k: v
             for k, v in os.environ.items()
-            if k.startswith("DATABASE_") or k == "ACADEMY_ORIGINS"
+            if k.startswith(("DATABASE_", "LIVEKIT_")) or k == "ACADEMY_ORIGINS"
         },
     }
 
@@ -192,7 +194,11 @@ def server_env(web_port):
     origins = [
         o.strip() for o in (config.get("ACADEMY_ORIGINS") or "").split(",") if o.strip()
     ]
-    origins += [f"http://127.0.0.1:{web_port}", f"http://localhost:{web_port}"]
+    origins += [
+        f"http://127.0.0.1:{web_port}",
+        f"http://localhost:{web_port}",
+        "https://arshadqais.github.io",
+    ]
     return {**os.environ, "ACADEMY_ORIGINS": ",".join(dict.fromkeys(origins))}
 
 
@@ -216,6 +222,8 @@ def api_command(port):
         "127.0.0.1",
         "--port",
         str(port),
+        "--ws-max-size",
+        "4096",
     ]
 
 
@@ -255,6 +263,22 @@ def wait_for_backend(process, port, timeout=30):
     )
 
 
+def open_local_browser(port, stopped):
+    deadline = time.monotonic() + 120
+    while not stopped.is_set() and time.monotonic() < deadline:
+        try:
+            with urllib.request.urlopen(
+                f"http://127.0.0.1:{port}", timeout=2
+            ) as response:
+                if response.status == 200:
+                    if not stopped.is_set():
+                        webbrowser.open(f"http://127.0.0.1:{port}")
+                    return
+        except (OSError, ValueError):
+            pass
+        stopped.wait(0.5)
+
+
 def start(args):
     database()
     require_free_port(args.api_port)
@@ -263,6 +287,7 @@ def start(args):
     process = subprocess.Popen(
         api_command(args.api_port), cwd=BACKEND, env=server_env(args.web_port)
     )
+    stopped = threading.Event()
     try:
         wait_for_backend(process, args.api_port)
         print(
@@ -273,8 +298,13 @@ def start(args):
             "This local website is connected to your local API. Ctrl+C stops the services started here.",
             flush=True,
         )
+        if getattr(args, "open_browser", False):
+            threading.Thread(
+                target=open_local_browser, args=(args.web_port, stopped), daemon=True
+            ).start()
         run(executable, cwd=FRONTEND)
     finally:
+        stopped.set()
         if process.poll() is None:
             process.terminate()
             try:
@@ -308,13 +338,131 @@ def check():
     run([PYTHON, "-m", "alembic", "check"], cwd=BACKEND)
 
 
+def connect_pages():
+    from urllib.parse import urlparse
+    from urllib.error import URLError
+
+    gh = shutil.which("gh")
+    if not gh:
+        raise LocalError(
+            "Install GitHub CLI (macOS: brew install gh), then sign in using gh auth login with your repository-owner account."
+        )
+    url = input("Public HTTPS API URL (no /api suffix): ").strip().rstrip("/")
+    parsed = urlparse(url)
+    if (
+        parsed.scheme != "https"
+        or not parsed.hostname
+        or parsed.username is not None
+        or parsed.query
+        or parsed.fragment
+    ):
+        raise LocalError(
+            "Enter a valid HTTPS API base URL without credentials or query parameters."
+        )
+    try:
+        request = urllib.request.Request(
+            url + "/health/db", headers={"Origin": "https://arshadqais.github.io"}
+        )
+        with urllib.request.urlopen(request, timeout=20) as response:
+            payload = json.load(response)
+            if (
+                not payload.get("connected")
+                or response.headers.get("Access-Control-Allow-Origin")
+                != "https://arshadqais.github.io"
+            ):
+                raise ValueError()
+    except (OSError, URLError, ValueError):
+        raise LocalError(
+            "The public API is not healthy or does not allow the academy website origin. Keep the API and tunnel running, and include https://arshadqais.github.io in ACADEMY_ORIGINS in backend/.env, then restart the API."
+        ) from None
+    run(
+        [
+            gh,
+            "variable",
+            "set",
+            "ACADEMY_API_BASE_URL",
+            "--body",
+            url,
+            "--repo",
+            "Arshadqais/Al_hassan-quran-acedemy",
+        ]
+    )
+    run(
+        [
+            gh,
+            "workflow",
+            "run",
+            "pages.yml",
+            "--repo",
+            "Arshadqais/Al_hassan-quran-acedemy",
+        ]
+    )
+    print(
+        "Website build requested with your public API URL. Check the GitHub Actions deployment result. Temporary tunnel URLs change after restart; use a named tunnel and an academy-owned domain for ongoing use."
+    )
+
+
+def guided_setup(args):
+    setup()
+    database()
+    status = subprocess.run(
+        [str(PYTHON), "-m", "app.integrations", "has-admin"], cwd=BACKEND
+    )
+    if status.returncode == 10:
+        run([PYTHON, "-m", "app.manage", "create-admin"], cwd=BACKEND)
+    elif status.returncode != 0:
+        raise LocalError(
+            "Could not check the administrator account. Existing accounts were not changed."
+        )
+    else:
+        print("An administrator already exists; use your existing account.")
+    pending = []
+    try:
+        run([PYTHON, "-m", "app.integrations", "download-quran"], cwd=BACKEND)
+    except LocalError:
+        pending.append(
+            "Quran text download: retry download-quran when connected to the provider"
+        )
+    print(
+        "Internet video requires your LiveKit project. Create one at https://cloud.livekit.io if needed. Enter its credentials only in this local terminal.",
+        flush=True,
+    )
+    if input("Configure internet video now? [Y/n]: ").strip().lower() != "n":
+        try:
+            run([PYTHON, "-m", "app.integrations", "configure-video"], cwd=BACKEND)
+        except LocalError:
+            pending.append(
+                "Video provider: rerun configure-video with valid project credentials"
+            )
+    else:
+        pending.append(
+            "Video provider: run configure-video before joining video classes"
+        )
+    if pending:
+        print("Setup still needs:\n- " + "\n- ".join(pending), flush=True)
+    print(
+        "Starting the academy on your computer. For remote participants, keep a public HTTPS tunnel and your internet video project available.",
+        flush=True,
+    )
+    (BACKEND / ".local").mkdir(exist_ok=True)
+    (BACKEND / ".local" / "desktop-setup-v1").touch()
+    start(args)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "command",
         choices=[
             "setup",
+            "guided-setup",
+            "desktop",
             "repair-flutter",
+            "configure-video",
+            "download-quran",
+            "check-services",
+            "share-api",
+            "connect-pages",
             "database",
             "create-admin",
             "run",
@@ -323,6 +471,7 @@ def main():
             "check",
         ],
     )
+    parser.add_argument("--open-browser", action="store_true")
     parser.add_argument("--api-port", type=int, default=8000)
     parser.add_argument("--web-port", type=int, default=8090)
     args = parser.parse_args()
@@ -331,6 +480,14 @@ def main():
     try:
         if args.command == "setup":
             setup()
+        elif args.command == "guided-setup":
+            guided_setup(args)
+        elif args.command == "desktop":
+            args.open_browser = True
+            if (BACKEND / ".local" / "desktop-setup-v1").exists():
+                start(args)
+            else:
+                guided_setup(args)
         elif args.command == "repair-flutter":
             repair_flutter(force=True)
         elif args.command == "database":
@@ -338,6 +495,22 @@ def main():
         elif args.command == "create-admin":
             database()
             run([PYTHON, "-m", "app.manage", "create-admin"], cwd=BACKEND)
+        elif args.command in ("configure-video", "download-quran", "check-services"):
+            require_python()
+            run([PYTHON, "-m", "app.integrations", args.command], cwd=BACKEND)
+        elif args.command == "share-api":
+            cloudflared = shutil.which("cloudflared")
+            if not cloudflared:
+                raise LocalError(
+                    "Install the official Cloudflare Tunnel client. On macOS: brew install cloudflared. Then start the academy and rerun share-api."
+                )
+            print(
+                "Keep the academy running in another terminal. This opens a temporary public HTTPS route to the API only, not PostgreSQL. Keep this terminal open. Copy its HTTPS URL into connect-pages.",
+                flush=True,
+            )
+            run([cloudflared, "tunnel", "--url", f"http://127.0.0.1:{args.api_port}"])
+        elif args.command == "connect-pages":
+            connect_pages()
         elif args.command == "run":
             start(args)
         elif args.command == "backend":

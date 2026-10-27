@@ -44,3 +44,5 @@ The included initial migration has a destructive downgrade. It is for a new pilo
 ## Remaining operational work
 
 Use academy-owned domain, hosting and LiveKit accounts. Add external rate limiting, monitoring, session cleanup, password recovery, consent rules, and retention policy before broad use. Configure and exercise off-machine backup recovery. There is no unattended deployment channel into an academy machine in the GitHub workflow.
+
+For the detailed laptop workflow, Quran cache, LiveKit account setup and internet tunnel instructions, see [Laptop and internet classrooms](laptop-and-internet.md). Chat now uses authenticated WebSocket notifications; ensure the HTTPS proxy supports WebSocket upgrades. Keep one API worker until a shared broker is introduced.

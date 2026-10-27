@@ -34,7 +34,9 @@ void main() {
     tester,
   ) async {
     final api = AcademyApi('');
-    await tester.pumpWidget(MaterialApp(home: LivePortal(api: api)));
+    await tester.pumpWidget(
+      MaterialApp(home: LivePortal(api: api, realtime: false)),
+    );
     expect(find.textContaining('has not been connected'), findsOneWidget);
     expect(find.byType(TextFormField), findsNothing);
   });
@@ -80,7 +82,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: ThemeData(useMaterial3: true),
-        home: LivePortal(api: api),
+        home: LivePortal(api: api, realtime: false),
       ),
     );
     await tester.enterText(

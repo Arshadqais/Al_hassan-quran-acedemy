@@ -16,12 +16,19 @@ The public website includes an interactive demonstration with fictional data. Ch
 - Individual and group schedules, stored in UTC and displayed in local time.
 - Teacher-recorded attendance and Quran progress.
 - Assigned study notes and homework; students can mark their own work complete.
-- Private, persisted conversations between authorized contacts. Use Refresh to receive new messages.
+- Live private chat between authorized contacts, persisted in PostgreSQL, with authenticated WebSocket updates and automatic reconnect. Private chat is also available during video classes.
+- Quran reading by all 30 paras and 114 Surahs, with unchanged Uthmani Arabic, optional Urdu/English translations, and local cached editions.
 - Parent feedback, administrative summaries and audit records.
 - Password changes that revoke every active session for the account.
 - LiveKit private classroom integration with camera, microphone, teacher screen sharing, and a leave button. Camera and microphone start off. A configured LiveKit service is required.
 
 Sessions are opaque, expire after eight hours, and can be revoked. Passwords use salted PBKDF2-SHA256. Browser session tokens are kept only in memory. Parents see linked children, teachers see assigned students, and students see their own records. Changing an ID in a URL does not bypass those checks.
+
+## Connected laptop app and internet calls
+
+Double-click **`Start Academy.command`** after pulling the updated repository, or run `python3 scripts/local.py desktop`. Its first-run wizard prepares the local Docker database and FastAPI, creates your administrator when needed, downloads all 30 paras, and privately configures your LiveKit project. Later launches start the local app and open it in your browser.
+
+Follow [the complete laptop/internet guide](docs/laptop-and-internet.md) to create the LiveKit project, use the Quran reader, and connect remote students through a public HTTPS tunnel. Database records and messages stay on your laptop; the video provider carries media between participants. Credentials and a real internet/device test remain necessary before declaring video ready.
 
 ## Quick local start (macOS / Linux)
 
@@ -138,6 +145,6 @@ The backend tests cover role/record ownership, private conversations, sessions, 
 
 ## Pilot boundaries
 
-This is a working development pilot, not a completed production rollout. The repository does not yet include file uploads, real-time WebSocket delivery, email invitations/recovery, explicit parent consent to read child-teacher conversations, or native mobile apps. Study notes and persisted text messages are supported. Private conversations are visible only to their participants; the app does not silently grant parents or administrators access to other people's conversations.
+This is a working development pilot, not a completed production rollout. The repository does not yet include file uploads, email invitations/recovery, explicit parent consent to read child-teacher conversations, or native mobile apps. Study notes and persisted text messages are supported. Private conversations are visible only to their participants; the app does not silently grant parents or administrators access to other people's conversations.
 
 A real LiveKit call, HTTPS tunnel, off-machine backup destination, and public GitHub Pages deployment need the academy's hosting and service access. The video client and token authorization can be built/tested independently, but an actual two-person media call must be validated using the chosen provider before teaching real learners. No real student records were used in development.

@@ -1,16 +1,22 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:livekit_client/livekit_client.dart';
 
 /// A private, backend-authorized classroom. Media stays off until a user enables it.
 class Classroom extends StatefulWidget {
   final String url, token, title;
   final bool canShareScreen;
+  final Widget? chat;
+  final ValueListenable<bool>? sessionActive;
   const Classroom({
     super.key,
     required this.url,
     required this.token,
     required this.title,
     required this.canShareScreen,
+    this.chat,
+    this.sessionActive,
   });
   @override
   State<Classroom> createState() => _ClassroomState();
@@ -30,6 +36,7 @@ class _ClassroomState extends State<Classroom> {
       ..listen((_) {
         if (mounted) setState(() {});
       });
+    widget.sessionActive?.addListener(sessionChanged);
     connect();
   }
 
@@ -50,11 +57,30 @@ class _ClassroomState extends State<Classroom> {
 
   @override
   void dispose() {
-    listener?.dispose();
-    room.disconnect();
-    room.dispose();
+    widget.sessionActive?.removeListener(sessionChanged);
+    unawaited(cleanup());
     super.dispose();
   }
+
+  Future<void>? cleanupFuture;
+  void sessionChanged() {
+    if (widget.sessionActive?.value == false && mounted) {
+      setState(
+        () => error =
+            'Your academy session ended. Leave the classroom and sign in again.',
+      );
+      unawaited(cleanup());
+    }
+  }
+
+  Future<void> cleanup() => cleanupFuture ??= () async {
+    await listener?.dispose();
+    try {
+      await room.disconnect();
+    } finally {
+      await room.dispose();
+    }
+  }();
 
   Future<void> change(Future<void> Function() action) async {
     if (changing) return;
@@ -109,12 +135,28 @@ class _ClassroomState extends State<Classroom> {
       }
     }
     return Scaffold(
+      endDrawer: widget.chat == null || widget.sessionActive?.value == false
+          ? null
+          : SizedBox(
+              width: (MediaQuery.sizeOf(context).width * .9)
+                  .clamp(240, 400)
+                  .toDouble(),
+              child: Drawer(child: widget.chat),
+            ),
       backgroundColor: const Color(0xFF102D25),
       appBar: AppBar(
         backgroundColor: const Color(0xFF143B30),
         foregroundColor: Colors.white,
         title: Text(widget.title, style: const TextStyle(fontSize: 18)),
         actions: [
+          if (widget.chat != null && widget.sessionActive?.value != false)
+            Builder(
+              builder: (drawerContext) => IconButton(
+                tooltip: 'Open private chat',
+                onPressed: () => Scaffold.of(drawerContext).openEndDrawer(),
+                icon: const Icon(Icons.chat_bubble_outline),
+              ),
+            ),
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text(
@@ -179,6 +221,12 @@ class _ClassroomState extends State<Classroom> {
                 spacing: 12,
                 runSpacing: 12,
                 children: [
+                  if (!room.canPlaybackAudio)
+                    control(
+                      Icons.volume_up_outlined,
+                      'Enable audio',
+                      () => change(room.startAudio),
+                    ),
                   control(
                     local?.isMicrophoneEnabled() == true
                         ? Icons.mic
@@ -202,7 +250,9 @@ class _ClassroomState extends State<Classroom> {
                   if (widget.canShareScreen)
                     control(
                       Icons.screen_share_outlined,
-                      'Share screen',
+                      local?.isScreenShareEnabled() == true
+                          ? 'Stop sharing'
+                          : 'Share screen',
                       () => change(() async {
                         await local?.setScreenShareEnabled(
                           !local.isScreenShareEnabled(),

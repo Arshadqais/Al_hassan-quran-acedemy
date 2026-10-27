@@ -119,3 +119,51 @@ class LocalWorkflowTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class GuidedSetupTests(unittest.TestCase):
+    def test_guided_setup_preserves_existing_admin_and_reports_pending_connections(
+        self,
+    ):
+        from types import SimpleNamespace
+
+        with tempfile.TemporaryDirectory() as folder:
+            with (
+                patch.object(local, "BACKEND", Path(folder)),
+                patch.object(local, "setup"),
+                patch.object(local, "database"),
+                patch.object(
+                    local.subprocess,
+                    "run",
+                    return_value=subprocess.CompletedProcess([], 0),
+                ),
+                patch.object(
+                    local, "run", side_effect=local.LocalError("provider offline")
+                ),
+                patch("builtins.input", return_value="n"),
+                patch.object(local, "start") as start,
+                patch("builtins.print") as output,
+            ):
+                args = SimpleNamespace(api_port=8000, web_port=8090)
+                local.guided_setup(args)
+                start.assert_called_once_with(args)
+                self.assertTrue((Path(folder) / ".local/desktop-setup-v1").exists())
+                self.assertTrue(
+                    any(
+                        "Setup still needs" in str(call)
+                        for call in output.call_args_list
+                    )
+                )
+
+    def test_connect_pages_rejects_plain_http_and_credentials_before_any_network_call(
+        self,
+    ):
+        for url in ["http://example.test", "https://:secret@example.test"]:
+            with (
+                patch.object(local.shutil, "which", return_value="gh"),
+                patch("builtins.input", return_value=url),
+                patch.object(local.urllib.request, "urlopen") as fetch,
+            ):
+                with self.assertRaises(local.LocalError):
+                    local.connect_pages()
+                fetch.assert_not_called()
