@@ -1,4 +1,6 @@
 import os
+import asyncio
+from contextlib import asynccontextmanager, suppress
 from app.db.database import env
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -7,7 +9,21 @@ from app.quran import router as quran_router
 from app.modules import router as modules_router
 from app.realtime import router as realtime_router
 
-app = FastAPI(title="Quran Academy API", version="1.0.0")
+from app.reminders import router as reminders_router, reminder_worker
+
+
+@asynccontextmanager
+async def lifespan(app):
+    task = asyncio.create_task(reminder_worker())
+    try:
+        yield
+    finally:
+        task.cancel()
+        with suppress(asyncio.CancelledError):
+            await task
+
+
+app = FastAPI(lifespan=lifespan, title="Quran Academy API", version="1.0.0")
 
 
 @app.get("/")
@@ -48,6 +64,7 @@ if origins:
         allow_headers=["Authorization", "Content-Type"],
     )
 app.include_router(router)
+app.include_router(reminders_router)
 app.include_router(modules_router)
 app.include_router(quran_router)
 app.include_router(realtime_router)

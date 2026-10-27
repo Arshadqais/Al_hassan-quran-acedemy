@@ -95,6 +95,33 @@ async def main(command):
         print(
             "LiveKit authentication passed. Configuration saved privately. Restart the academy API before joining a class."
         )
+    elif command == "configure-whatsapp":
+        from app.whatsapp_setup import verify_whatsapp, save_whatsapp
+        values = config()
+        prompts = [
+            ("WHATSAPP_PHONE_NUMBER_ID", "Meta sender phone-number ID", ""),
+            ("WHATSAPP_WABA_ID", "WhatsApp business account ID", ""),
+            ("WHATSAPP_TEMPLATE_NAME", "Approved reminder template name", "class_reminder"),
+            ("WHATSAPP_TEMPLATE_LANGUAGE", "Template language code", "en"),
+            ("WHATSAPP_API_VERSION", "Graph API version", "v23.0"),
+            ("REMINDER_MINUTES", "Minutes before class (1–120)", "10"),
+            ("REMINDER_TIMEZONE", "Timezone for one-off class reminders", "Asia/Karachi"),
+        ]
+        for name, label, default in prompts:
+            existing = values.get(name) or default
+            values[name] = input(f"{label} [{existing}]: ").strip() or existing
+        for name, label in [("WHATSAPP_ACCESS_TOKEN", "Meta access token"),
+            ("WHATSAPP_APP_SECRET", "Meta app secret for signed delivery receipts (optional)"),
+            ("WHATSAPP_VERIFY_TOKEN", "Your chosen webhook verification token (optional)")]:
+            values[name] = getpass.getpass(label + " (hidden; blank keeps existing): ").strip() or values.get(name, "")
+        try:
+            await verify_whatsapp(values)
+        except ValueError as error:
+            raise SystemExit(str(error)) from None
+        except Exception:
+            raise SystemExit("Could not verify WhatsApp. Check credentials, network, TLS trust, and Meta permissions. Existing settings were not changed.") from None
+        save_whatsapp(ENV_PATH, values)
+        print("WhatsApp sender and approved template verified. Saved privately; no message was sent. Restart the backend. Each recipient must opt in under Account → WhatsApp reminders.")
     elif command == "download-quran":
         from app.quran import book
 
@@ -155,7 +182,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "command",
-        choices=["configure-video", "download-quran", "check-services", "has-admin"],
+        choices=["configure-video", "configure-whatsapp", "download-quran", "check-services", "has-admin"],
     )
     args = parser.parse_args()
     asyncio.run(main(args.command))

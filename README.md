@@ -20,6 +20,7 @@ The public website includes an interactive demonstration with fictional data. Ch
 - Live one-to-one chat for authorized teacher/student/parent/admin contacts, persisted in PostgreSQL, with authenticated WebSocket updates. Administrators can review teacher–student and teacher–parent conversations through an explicitly disclosed, read-only, audited review screen. Chat also remains available during video classes.
 - Quran reading by all 30 paras and 114 Surahs, with unchanged Uthmani Arabic, optional Urdu/English translations, and local cached editions.
 - Parent feedback, administrative summaries and audit records.
+- Opt-in WhatsApp Business reminders before class for teachers, enrolled students, and linked parents, with durable duplicate protection and signed delivery-status receipts. Requires the client’s Meta sender and an approved template; [setup guide](docs/whatsapp-reminders.md).
 - Password changes that revoke every active session for the account.
 - LiveKit private classroom integration with camera, microphone, teacher screen sharing with synchronized rectangle highlights, and a leave button. Camera and microphone start off. A configured LiveKit service is required.
 

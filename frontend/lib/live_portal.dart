@@ -1,3 +1,4 @@
+import 'whatsapp_reminders.dart';
 import 'student_records.dart';
 import 'recurring_schedule.dart';
 import 'conversation_review.dart';
@@ -134,7 +135,8 @@ class _LivePortalState extends State<LivePortal> {
     'Classes',
     'Weekly schedule',
     'Student records',
-    if (role == 'admin') 'Chat review',
+    if (role == 'admin') ...['Chat review', 'Reminder delivery'],
+    'WhatsApp reminders',
     'Progress',
     'Attendance',
     'Quran',
@@ -401,6 +403,8 @@ class _LivePortalState extends State<LivePortal> {
     'Weekly schedule' => Icons.repeat,
     'Student records' => Icons.summarize_outlined,
     'Chat review' => Icons.forum_outlined,
+    'WhatsApp reminders' => Icons.notifications_active_outlined,
+    'Reminder delivery' => Icons.send_to_mobile_outlined,
     'Progress' => Icons.insights_outlined,
     'Attendance' => Icons.event_available_outlined,
     'Quran' => Icons.menu_book_outlined,
@@ -799,6 +803,13 @@ class _LivePortalState extends State<LivePortal> {
       editor: editor,
     ),
     'Chat review' => ConversationReview(fetch: (path) => api.call(path)),
+    'WhatsApp reminders' => WhatsAppReminderSettings(
+      fetch: (path) => api.call(path),
+      save: (path, body) async {
+        await api.call(path, method: 'PUT', body: body);
+      },
+    ),
+    'Reminder delivery' => ReminderDelivery(fetch: (path) => api.call(path)),
     'Progress' => progressPage(),
     'Attendance' => attendancePage(),
     'Resources' => resourcePage(),
@@ -2170,6 +2181,14 @@ class _LivePortalState extends State<LivePortal> {
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
       heading('My profile', 'Your academy profile and account security.'),
+      Align(
+        alignment: Alignment.centerLeft,
+        child: TextButton.icon(
+          onPressed: () => navigate('WhatsApp reminders'),
+          icon: const Icon(Icons.notifications_active_outlined),
+          label: const Text('Set WhatsApp class reminders'),
+        ),
+      ),
       box(
         Column(
           children: [

@@ -459,6 +459,7 @@ def main():
             "desktop",
             "repair-flutter",
             "configure-video",
+            "configure-whatsapp",
             "download-quran",
             "check-services",
             "share-api",
@@ -495,7 +496,7 @@ def main():
         elif args.command == "create-admin":
             database()
             run([PYTHON, "-m", "app.manage", "create-admin"], cwd=BACKEND)
-        elif args.command in ("configure-video", "download-quran", "check-services"):
+        elif args.command in ("configure-video", "configure-whatsapp", "download-quran", "check-services"):
             require_python()
             run([PYTHON, "-m", "app.integrations", args.command], cwd=BACKEND)
         elif args.command == "share-api":

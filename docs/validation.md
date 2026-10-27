@@ -38,3 +38,24 @@ Clear highlights, and persisted in-call contact chat. Screenshots visibly show
 the rectangle on the student's received screen track. This is isolated local
 transport verification; the owner's actual devices and internet connection still
 need their normal operational test.
+
+## WhatsApp class reminder integration
+
+The reminder update passes 41 backend tests, 26 Flutter tests, and 8 launcher
+tests. The additive contact/outbox migration was applied to an isolated
+PostgreSQL database containing a pre-update lesson; that lesson remained and
+Alembic reported no schema differences. The backend suite runs on both SQLite
+and isolated PostgreSQL. Flutter analysis and the web release build pass.
+
+WhatsApp tests use HTTPX mock transports only: no real WhatsApp message was sent.
+They cover own-account opt-in, phone validation/privacy, teacher/student/linked
+parent routing, shared-number deduplication, durable restart protection,
+rate-limit retry timing, cancellation and opt-out rechecks, network uncertainty,
+signed/out-of-order/early delivery receipts, read-only sender/template
+verification, backend worker lifecycle, and shared-number changes after queuing.
+Flutter tests cover opt-in/opt-out and distinguish Accepted from Delivered.
+
+The actual client's Meta business sender, approved template, permissions, billing,
+public webhook subscription, and receipt of a real message on an opted-in phone
+must be verified during [WhatsApp onboarding](whatsapp-reminders.md). No real
+provider credentials were configured in the development environment.

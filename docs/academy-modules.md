@@ -103,3 +103,7 @@ flutter run -d chrome --web-port=8091 --no-web-resources-cdn --dart-define=API_B
 If Python on this Mac needs the certificate bundle previously configured, set
 `SSL_CERT_FILE` from `backend/.venv/bin/python -m certifi` in the backend terminal
 before starting it. Existing passwords, LiveKit settings, and records remain.
+
+## WhatsApp reminders
+
+Optional [WhatsApp Business class reminders](whatsapp-reminders.md) notify opted-in teachers, students, and linked parents before lessons. Set up the approved template and private business credentials on the client’s academy computer first.

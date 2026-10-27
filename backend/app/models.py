@@ -151,3 +151,30 @@ class AuditLog(Base):
     actor_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     action: Mapped[str] = mapped_column(String(120))
     created_at: Mapped[datetime] = mapped_column(default=now)
+
+
+class ReminderContact(Base):
+    __tablename__ = "reminder_contacts"
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), primary_key=True)
+    phone: Mapped[str] = mapped_column(String(16), default="")
+    consent: Mapped[bool] = mapped_column(default=False)
+    updated_at: Mapped[datetime] = mapped_column(default=now)
+
+
+class WhatsAppReminder(Base):
+    __tablename__ = "whatsapp_reminders"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    session_id: Mapped[int] = mapped_column(ForeignKey("class_sessions.id"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    phone: Mapped[str] = mapped_column(String(16))
+    starts_at: Mapped[datetime]
+    state: Mapped[str] = mapped_column(String(16), default="pending", index=True)
+    attempts: Mapped[int] = mapped_column(default=0)
+    next_attempt_at: Mapped[datetime] = mapped_column(default=now)
+    claimed_at: Mapped[datetime | None]
+    provider_id: Mapped[str | None] = mapped_column(String(256), unique=True)
+    error_code: Mapped[str] = mapped_column(String(80), default="")
+    created_at: Mapped[datetime] = mapped_column(default=now)
+    updated_at: Mapped[datetime] = mapped_column(default=now)
+    __table_args__ = (UniqueConstraint("session_id", "phone", name="uq_class_whatsapp_phone"),
+        UniqueConstraint("session_id", "user_id", name="uq_class_whatsapp_user"))
