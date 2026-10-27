@@ -303,6 +303,7 @@ async def test_classroom_tokens_are_short_lived_scoped_and_teacher_led(
         )
         assert claims["video"]["room"] == f"academy-class-{session_id}"
         assert claims["video"]["roomJoin"] is True
+        assert claims["video"]["canPublishData"] is is_teacher
         assert ("screen_share" in claims["video"]["canPublishSources"]) is is_teacher
         assert claims["exp"] - claims["nbf"] <= 600
     async with client.factory() as session:

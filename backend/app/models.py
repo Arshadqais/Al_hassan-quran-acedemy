@@ -1,6 +1,6 @@
 """Academy records; scope is enforced by the API in addition to foreign keys."""
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date
 from sqlalchemy import String, ForeignKey, UniqueConstraint, CheckConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -42,6 +42,29 @@ class LoginSession(Base):
     expires_at: Mapped[datetime]
 
 
+class ClassSchedule(Base):
+    __tablename__ = "class_schedules"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    title: Mapped[str] = mapped_column(String(100))
+    teacher_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    start_date: Mapped[date]
+    end_date: Mapped[date | None]
+    local_time: Mapped[str] = mapped_column(String(5))
+    timezone: Mapped[str] = mapped_column(String(80))
+    weekdays: Mapped[str] = mapped_column(String(13))
+    duration: Mapped[int] = mapped_column(default=30)
+    category: Mapped[str] = mapped_column(String(20), default="Individual")
+    active: Mapped[bool] = mapped_column(default=True)
+
+
+class ScheduleEnrollment(Base):
+    __tablename__ = "schedule_enrollments"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    schedule_id: Mapped[int] = mapped_column(ForeignKey("class_schedules.id"), index=True)
+    student_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    __table_args__ = (UniqueConstraint("schedule_id", "student_id"),)
+
+
 class ClassSession(Base):
     __tablename__ = "class_sessions"
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -50,6 +73,9 @@ class ClassSession(Base):
     starts_at: Mapped[datetime]
     duration: Mapped[int] = mapped_column(default=30)
     category: Mapped[str] = mapped_column(String(20), default="Individual")
+    schedule_id: Mapped[int | None] = mapped_column(ForeignKey("class_schedules.id"), index=True)
+    cancelled: Mapped[bool] = mapped_column(default=False)
+    __table_args__ = (UniqueConstraint("schedule_id", "starts_at", name="uq_schedule_occurrence"),)
 
 
 class Enrollment(Base):

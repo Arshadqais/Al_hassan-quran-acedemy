@@ -13,14 +13,15 @@ The public website includes an interactive demonstration with fictional data. Ch
 **Academy sign in** opens the separate live portal when an API URL is configured. The server determines the role. It provides:
 
 - Administrator-created accounts and teacher/student/parent links.
-- Individual and group schedules, stored in UTC and displayed in local time.
+- Individual and group classes plus persistent weekly schedules: set weekdays, local time, and timezone once; the next 45 days expand automatically.
+- Consolidated student records, parent/child selection, attendance totals, and monthly attendance charts.
 - Teacher-recorded attendance and Quran progress.
 - Assigned study notes and homework; students can mark their own work complete.
-- Live private chat between authorized contacts, persisted in PostgreSQL, with authenticated WebSocket updates and automatic reconnect. Private chat is also available during video classes.
+- Live one-to-one chat for authorized teacher/student/parent/admin contacts, persisted in PostgreSQL, with authenticated WebSocket updates. Administrators can review teacher–student and teacher–parent conversations through an explicitly disclosed, read-only, audited review screen. Chat also remains available during video classes.
 - Quran reading by all 30 paras and 114 Surahs, with unchanged Uthmani Arabic, optional Urdu/English translations, and local cached editions.
 - Parent feedback, administrative summaries and audit records.
 - Password changes that revoke every active session for the account.
-- LiveKit private classroom integration with camera, microphone, teacher screen sharing, and a leave button. Camera and microphone start off. A configured LiveKit service is required.
+- LiveKit private classroom integration with camera, microphone, teacher screen sharing with synchronized rectangle highlights, and a leave button. Camera and microphone start off. A configured LiveKit service is required.
 
 Sessions are opaque, expire after eight hours, and can be revoked. Passwords use salted PBKDF2-SHA256. Browser session tokens are kept only in memory. Parents see linked children, teachers see assigned students, and students see their own records. Changing an ID in a URL does not bypass those checks.
 
@@ -127,6 +128,8 @@ The admin command prompts for a name, email and password; there are no default p
 If the first deployment ran before Pages was enabled, rerun the failed deployment job or run the workflow manually after enabling it.
 
 The API, database and GitHub Pages have separate lifecycles. Deploying the website does not update a Python process on the academy server. See [server deployment and backups](docs/deployment.md).
+
+See [new modules and usage](docs/academy-modules.md) for weekly schedules, family records, attendance charts, administrator chat review, and screen-share highlights.
 
 ## Validation
 

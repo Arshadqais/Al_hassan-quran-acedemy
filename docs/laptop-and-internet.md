@@ -87,7 +87,7 @@ Attribution and usage: [AlQuran Cloud](https://alquran.cloud/), [Tanzil Project 
 
 Messages are persisted in PostgreSQL. A session-authenticated WebSocket sends participant-only change notifications, and the client retrieves authorized messages through the API. Session tokens are never put in WebSocket URLs. Connections automatically reconnect after interruptions, and logout/expiry is rechecked while a socket is open. Use one API worker until a shared notification broker is added.
 
-During a video lesson, open **Private chat** in the classroom header. The call continues while you message an authorized academy contact. This is private contact messaging, not a group-wide classroom broadcast. Teachers/admins can share screens; student room tokens only permit camera and microphone. If browser autoplay blocks sound, use **Enable audio**. A revoked/expired academy session disconnects the classroom when detected by the live session check.
+During a video lesson, open **Private chat** in the classroom header. The call continues while you message an authorized academy contact. This is one-to-one contact messaging. Teacher–student and teacher–parent conversations are reviewable by administrators through the disclosed and audited Chat review module; it is not group broadcast or end-to-end encrypted chat. Teachers/admins can share screens; student room tokens only permit camera and microphone. If browser autoplay blocks sound, use **Enable audio**. A revoked/expired academy session disconnects the classroom when detected by the live session check.
 
 Before teaching real learners, test two actual devices on separate internet connections: sign in as an assigned teacher/student, join a currently scheduled class, enable camera and microphone, verify sound/video in both directions, share a screen, send chat while connected, and leave/rejoin. Simulated local media tests do not establish your internet connection, device permissions, provider account, or TURN/firewall readiness.
 
@@ -98,3 +98,5 @@ python3 scripts/local.py check-services
 ```
 
 This reports database connectivity, whether the Arabic cache exists, and whether the configured video provider actually authenticates. A saved video URL alone is not a successful provider test. Never paste `.env`, passwords, API secrets or session tokens into chat/logs.
+
+See [attendance, family records, weekly schedules, and screen highlights](academy-modules.md) for the new live modules.

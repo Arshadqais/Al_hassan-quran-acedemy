@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'screen_annotations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:livekit_client/livekit_client.dart';
@@ -29,12 +30,30 @@ class _ClassroomState extends State<Classroom> {
   EventsListener<RoomEvent>? listener;
   bool connecting = true, changing = false;
   String error = '';
+  bool annotate = false;
+  final annotations = <String, AnnotationSnapshot>{};
   @override
   void initState() {
     super.initState();
     listener = room.createListener()
+      ..on<DataReceivedEvent>(receiveAnnotations)
+      ..on<ParticipantConnectedEvent>((_) => resendAnnotations())
+      ..on<RoomReconnectedEvent>((_) => resendAnnotations())
       ..listen((_) {
-        if (mounted) setState(() {});
+        if (mounted) {
+          setState(() {
+            final active = <String>{
+              for (final p in <Participant>[
+                ...room.remoteParticipants.values,
+                ?room.localParticipant,
+              ])
+                for (final pub in p.videoTrackPublications)
+                  if (pub.source == TrackSource.screenShareVideo && !pub.muted)
+                    pub.sid,
+            };
+            annotations.removeWhere((sid, _) => !active.contains(sid));
+          });
+        }
       });
     widget.sessionActive?.addListener(sessionChanged);
     connect();
@@ -53,6 +72,137 @@ class _ClassroomState extends State<Classroom> {
     } finally {
       if (mounted) setState(() => connecting = false);
     }
+  }
+
+  void receiveAnnotations(DataReceivedEvent event) {
+    if (event.topic != annotationTopic ||
+        !mounted ||
+        widget.sessionActive?.value == false) {
+      return;
+    }
+    final sender = event.participant;
+    if (sender == null || !sender.permissions.canPublishData) return;
+    final snapshot = AnnotationSnapshot.decode(event.data);
+    if (snapshot == null ||
+        !sender.videoTrackPublications.any(
+          (p) =>
+              p.sid == snapshot.track &&
+              p.source == TrackSource.screenShareVideo &&
+              !p.muted,
+        )) {
+      return;
+    }
+    if ((annotations[snapshot.track]?.revision ?? -1) >= snapshot.revision) {
+      return;
+    }
+    setState(() => annotations[snapshot.track] = snapshot);
+  }
+
+  Future<void> sendAnnotations(String sid, List<Rect> rectangles) async {
+    if (!widget.canShareScreen || widget.sessionActive?.value == false) return;
+    final snapshot = AnnotationSnapshot(
+      sid,
+      (annotations[sid]?.revision ?? 0) + 1,
+      rectangles,
+    );
+    setState(() => annotations[sid] = snapshot);
+    try {
+      await room.localParticipant?.publishData(
+        snapshot.encode(),
+        reliable: true,
+        topic: annotationTopic,
+      );
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Highlight could not be sent. Check your connection and draw again.',
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  void resendAnnotations() {
+    if (!widget.canShareScreen || widget.sessionActive?.value == false) return;
+    for (final publication
+        in room.localParticipant?.videoTrackPublications ?? []) {
+      final snapshot = annotations[publication.sid];
+      if (snapshot != null) {
+        unawaited(sendAnnotations(publication.sid, snapshot.rectangles));
+      }
+    }
+  }
+
+  Widget screenTile(
+    Participant owner,
+    TrackPublication publication,
+    VideoTrack track,
+  ) {
+    final dimensions = publication.dimensions;
+    final ratio = dimensions != null && dimensions.height > 0
+        ? dimensions.width / dimensions.height
+        : 16 / 9;
+    final editable = owner is LocalParticipant && widget.canShareScreen;
+    return tile(
+      '${owner.name} · Shared screen',
+      Column(
+        children: [
+          if (editable)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: Row(
+                children: [
+                  TextButton.icon(
+                    onPressed: () => setState(() => annotate = !annotate),
+                    icon: Icon(
+                      annotate ? Icons.check : Icons.crop_free,
+                      color: const Color(0xFFFFCC43),
+                    ),
+                    label: Text(
+                      annotate ? 'Done highlighting' : 'Draw rectangle',
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    tooltip: 'Clear highlights',
+                    onPressed: () => sendAnnotations(publication.sid, []),
+                    icon: const Icon(
+                      Icons.layers_clear_outlined,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          Expanded(
+            child: Center(
+              child: AspectRatio(
+                aspectRatio: ratio,
+                child: ScreenAnnotationCanvas(
+                  key: ValueKey(publication.sid),
+                  enabled:
+                      editable &&
+                      annotate &&
+                      widget.sessionActive?.value != false,
+                  rectangles: annotations[publication.sid]?.rectangles ?? [],
+                  onChanged: (rects) =>
+                      unawaited(sendAnnotations(publication.sid, rects)),
+                  child: VideoTrackRenderer(
+                    track,
+                    fit: VideoViewFit.contain,
+                    mirrorMode: VideoViewMirrorMode.off,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -110,13 +260,18 @@ class _ClassroomState extends State<Classroom> {
       ?local,
     ];
     final video = <Widget>[];
+    final screens = <Widget>[];
     for (final participant in participants) {
       var hasVideo = false;
       for (final publication in participant.videoTrackPublications) {
         final track = publication.track;
         if (track is VideoTrack && !publication.muted) {
           hasVideo = true;
-          video.add(tile(participant.name, VideoTrackRenderer(track)));
+          if (publication.source == TrackSource.screenShareVideo) {
+            screens.add(screenTile(participant, publication, track));
+          } else {
+            video.add(tile(participant.name, VideoTrackRenderer(track)));
+          }
         }
       }
       if (!hasVideo) {
@@ -195,6 +350,40 @@ class _ClassroomState extends State<Classroom> {
                           ),
                         ),
                       ),
+                    )
+                  : screens.isNotEmpty
+                  ? Column(
+                      children: [
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: screens.first,
+                          ),
+                        ),
+                        if (video.isNotEmpty)
+                          SizedBox(
+                            height: 115,
+                            child: ListView(
+                              scrollDirection: Axis.horizontal,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
+                              children: video
+                                  .map(
+                                    (v) => SizedBox(
+                                      width: 160,
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(
+                                          right: 8,
+                                        ),
+                                        child: v,
+                                      ),
+                                    ),
+                                  )
+                                  .toList(),
+                            ),
+                          ),
+                      ],
                     )
                   : video.isEmpty
                   ? const Center(
@@ -282,18 +471,35 @@ class _ClassroomState extends State<Classroom> {
   Widget control(IconData icon, String label, VoidCallback action) => Column(
     mainAxisSize: MainAxisSize.min,
     children: [
-      IconButton.filledTonal(
-        tooltip: label,
-        style: IconButton.styleFrom(
-          backgroundColor: const Color(0xFF315447),
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.all(15),
+      Tooltip(
+        message: label,
+        excludeFromSemantics: true,
+        child: Semantics(
+          label: label,
+          button: true,
+          excludeSemantics: true,
+          enabled: !(connecting || changing || error.isNotEmpty),
+          onTap: connecting || changing || error.isNotEmpty ? null : action,
+          child: IconButton.filledTonal(
+            style: IconButton.styleFrom(
+              backgroundColor: const Color(0xFF315447),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.all(15),
+            ),
+            onPressed: connecting || changing || error.isNotEmpty
+                ? null
+                : action,
+            icon: Icon(icon, color: Colors.white, size: 23),
+          ),
         ),
-        onPressed: connecting || changing || error.isNotEmpty ? null : action,
-        icon: Icon(icon, color: Colors.white, size: 23),
       ),
       const SizedBox(height: 7),
-      Text(label, style: const TextStyle(color: Colors.white, fontSize: 10)),
+      ExcludeSemantics(
+        child: Text(
+          label,
+          style: const TextStyle(color: Colors.white, fontSize: 10),
+        ),
+      ),
     ],
   );
   Widget tile(String name, Widget content) => ClipRRect(

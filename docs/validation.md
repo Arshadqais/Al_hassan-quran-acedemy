@@ -11,3 +11,30 @@ The implementation was exercised in the development workspace. These results des
 The development workspace initially denied outbound access to `api.alquran.cloud`; the required domain additions were saved in its environment draft. Quran parser/cache/API tests used clearly labelled synthetic fixtures. Those fixtures are not installed in the application's Quran cache. A successful provider download and text display must be verified on the laptop using `download-quran` or the desktop wizard. No scripture was generated as a substitute for a blocked download.
 
 The owner must still enter their actual LiveKit project credentials privately on the laptop, authenticate the provider, keep the laptop API available through public HTTPS for remote users, deploy the frontend with that HTTPS URL, and complete the two-device internet/device-permissions checks in [the laptop guide](laptop-and-internet.md).
+
+## Connected academy modules
+
+The follow-up modules add recurring weekly class rules, scoped student/family
+summaries, monthly attendance charts, disclosed audited administrator chat
+review, and normalized shared-screen rectangle annotations. The suite now has
+29 backend tests (SQLite and isolated PostgreSQL), 24 Flutter tests, and 8 local
+launcher tests. Flutter analysis is clean and the release web build succeeds.
+
+A PostgreSQL migration test upgraded an old-schema database containing an
+existing teacher/lesson, verified the original lesson remains, verified its new
+cancelled flag is false, and ran Alembic's schema check. Recurrence tests cover
+rolling horizon expansion, duplicate prevention, stopping future lessons without
+removing history, role/assignment limits, timezone validation, and daylight-saving
+gaps/overlaps. Summary tests distinguish absent and unrecorded attendance and
+reject unrelated parents/students. Chat review tests verify role gates, sender
+attribution, pagination, and access audit entries. Widget tests cover family
+selection, charts, weekly schedule creation, read-only review, rectangle gestures,
+and rejection of invalid annotation packets.
+
+A real local LiveKit/WebRTC check with simulated camera, microphone, and screen
+confirmed two-way media, teacher screen sharing, a yellow rectangle delivered to
+a student at a different viewport size (1440x1000 vs 1024x768), synchronized
+Clear highlights, and persisted in-call contact chat. Screenshots visibly show
+the rectangle on the student's received screen track. This is isolated local
+transport verification; the owner's actual devices and internet connection still
+need their normal operational test.

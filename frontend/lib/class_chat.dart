@@ -1,3 +1,4 @@
+import 'conversation_review.dart';
 import 'package:flutter/material.dart';
 import 'message_events.dart';
 
@@ -110,6 +111,10 @@ class _ClassChatState extends State<ClassChat> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          const Padding(
+            padding: EdgeInsets.all(12),
+            child: Text(supervisionNotice, style: TextStyle(fontSize: 10)),
+          ),
           const Text(
             'Private chat',
             style: TextStyle(

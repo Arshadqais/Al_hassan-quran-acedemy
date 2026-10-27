@@ -166,7 +166,7 @@ async def check_student(session, user, student_id, write=False):
 
 async def session_access(session, user, session_id, write=False):
     item = await session.get(ClassSession, session_id)
-    if not item:
+    if not item or item.cancelled:
         raise HTTPException(404, "Class not found")
     if user.role == "admin":
         return item
@@ -282,7 +282,9 @@ async def link(data: LinkIn, user=Depends(current_user), session=Depends(db)):
 
 @router.get("/classes")
 async def classes(user=Depends(current_user), session=Depends(db)):
-    query = select(ClassSession).order_by(ClassSession.starts_at)
+    from app.recurrence import expand_schedules
+    await expand_schedules(session, user)
+    query = select(ClassSession).where(ClassSession.cancelled == False).order_by(ClassSession.starts_at)
     if user.role == "teacher":
         query = query.where(ClassSession.teacher_id == user.id)
     elif user.role != "admin":
@@ -299,7 +301,7 @@ async def classes(user=Depends(current_user), session=Depends(db)):
         teacher = await session.get(User, row.teacher_id)
         result.append(
             {
-                **serialize(row, "id title teacher_id starts_at duration category"),
+                **serialize(row, "id title teacher_id starts_at duration category schedule_id"),
                 "teacher": teacher.name,
             }
         )
@@ -332,7 +334,7 @@ async def create_class(data: ClassIn, user=Depends(current_user), session=Depend
         session.add(Enrollment(session_id=item.id, student_id=student_id))
     audit(session, user, "schedule class")
     await session.commit()
-    return serialize(item, "id title teacher_id starts_at duration category")
+    return serialize(item, "id title teacher_id starts_at duration category schedule_id")
 
 
 @router.get("/attendance")
@@ -504,7 +506,8 @@ async def conversation(other_id: int, user=Depends(current_user), session=Depend
     other = await session.get(User, other_id)
     if not await can_message(session, user, other):
         raise HTTPException(404, "Conversation not found")
-    # No administrator/parent access to somebody else's private conversation.
+    # This endpoint only returns the signed-in participant's thread.
+    # Explicit audited administrator supervision uses /admin/conversations.
     query = (
         select(Message)
         .where(
@@ -615,7 +618,7 @@ async def room_token(session_id: int, user=Depends(current_user), session=Depend
                 room=f"academy-class-{item.id}",
                 can_publish=True,
                 can_subscribe=True,
-                can_publish_data=False,
+                can_publish_data=user.role in ("admin", "teacher"),
                 can_publish_sources=sources,
             )
         )

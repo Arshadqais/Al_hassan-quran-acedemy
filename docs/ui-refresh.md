@@ -50,3 +50,5 @@ Keep the backend running with `python3 scripts/local.py backend --web-port 8091`
 and Docker Desktop open. Existing private `backend/.env` and database contents
 are retained. Published Pages still requires the owner's public HTTPS backend
 configuration for real sign-in.
+
+Subsequent connected modules are documented in [academy modules](academy-modules.md), including the additive schedule migration and audited administrator chat supervision.

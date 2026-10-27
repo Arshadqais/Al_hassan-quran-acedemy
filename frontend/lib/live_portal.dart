@@ -1,3 +1,6 @@
+import 'student_records.dart';
+import 'recurring_schedule.dart';
+import 'conversation_review.dart';
 import 'academy_design.dart';
 import 'classroom.dart';
 import 'class_chat.dart';
@@ -129,6 +132,9 @@ class _LivePortalState extends State<LivePortal> {
     'Overview',
     if (role == 'admin') ...['People', 'Assignments'],
     'Classes',
+    'Weekly schedule',
+    'Student records',
+    if (role == 'admin') 'Chat review',
     'Progress',
     'Attendance',
     'Quran',
@@ -392,6 +398,9 @@ class _LivePortalState extends State<LivePortal> {
     'People' => Icons.groups_outlined,
     'Assignments' => Icons.family_restroom_outlined,
     'Classes' => Icons.calendar_month_outlined,
+    'Weekly schedule' => Icons.repeat,
+    'Student records' => Icons.summarize_outlined,
+    'Chat review' => Icons.forum_outlined,
     'Progress' => Icons.insights_outlined,
     'Attendance' => Icons.event_available_outlined,
     'Quran' => Icons.menu_book_outlined,
@@ -773,6 +782,23 @@ class _LivePortalState extends State<LivePortal> {
     'People' => peoplePage(),
     'Assignments' => assignmentPage(),
     'Classes' => classPage(),
+    'Student records' => StudentRecords(
+      key: ValueKey(studentId),
+      initialStudentId: studentId,
+      students: students,
+      fetch: (path) => api.call(path),
+    ),
+    'Weekly schedule' => RecurringSchedules(
+      fetch: (path) => api.call(path),
+      save: (path, data) async {
+        await api.call(path, method: 'POST', body: data);
+        await execute(refresh);
+      },
+      students: students,
+      teachers: role == 'teacher' ? [user!] : teachers,
+      editor: editor,
+    ),
+    'Chat review' => ConversationReview(fetch: (path) => api.call(path)),
     'Progress' => progressPage(),
     'Attendance' => attendancePage(),
     'Resources' => resourcePage(),
@@ -952,7 +978,7 @@ class _LivePortalState extends State<LivePortal> {
                   studentId = child['id'] as int;
                   progress =
                       await api.call('/students/$studentId/progress') as List;
-                  page = 'Progress';
+                  page = 'Student records';
                 }),
               ),
             ),
@@ -1388,6 +1414,14 @@ class _LivePortalState extends State<LivePortal> {
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
       heading('My classes', 'Your schedule, in your device’s local time.'),
+      Align(
+        alignment: Alignment.centerLeft,
+        child: TextButton.icon(
+          onPressed: () => navigate('Weekly schedule'),
+          icon: const Icon(Icons.repeat),
+          label: const Text('Set once · Weekly schedule'),
+        ),
+      ),
       if (editor)
         Align(
           alignment: Alignment.centerLeft,
@@ -1606,6 +1640,14 @@ class _LivePortalState extends State<LivePortal> {
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
       heading('Attendance', 'A record of each lesson attended.'),
+      Align(
+        alignment: Alignment.centerLeft,
+        child: TextButton.icon(
+          onPressed: () => navigate('Student records'),
+          icon: const Icon(Icons.bar_chart_outlined),
+          label: const Text('Attendance charts & student summary'),
+        ),
+      ),
       attendanceCalendar(),
       if (editor && classes.isNotEmpty && students.isNotEmpty)
         Align(
@@ -1937,13 +1979,54 @@ class _LivePortalState extends State<LivePortal> {
       ),
     ],
   );
+  Widget contactDirectory() => Padding(
+    padding: const EdgeInsets.only(bottom: 18),
+    child: Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: contacts
+          .map(
+            (c) => ActionChip(
+              avatar: Icon(
+                c['role'] == 'admin'
+                    ? Icons.admin_panel_settings_outlined
+                    : c['role'] == 'parent'
+                    ? Icons.family_restroom
+                    : c['role'] == 'teacher'
+                    ? Icons.school_outlined
+                    : Icons.person_outline,
+                size: 16,
+              ),
+              label: Text(
+                '${c['name']} · ${c['role']}',
+                style: const TextStyle(fontSize: 11),
+              ),
+              onPressed: busy
+                  ? null
+                  : () => execute(() async {
+                      contactId = c['id'] as int;
+                      messages = await api.call('/messages/$contactId') as List;
+                    }),
+            ),
+          )
+          .toList(),
+    ),
+  );
   Widget messagePage() => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
       heading(
         'Messages',
-        'Private conversations with your authorized academy contacts. Live updates reconnect automatically.',
+        'Chat with your linked students, their parents, teachers, and academy admin.',
       ),
+      const Padding(
+        padding: EdgeInsets.only(bottom: 12),
+        child: Text(
+          supervisionNotice,
+          style: TextStyle(fontSize: 11, color: _muted),
+        ),
+      ),
+      contactDirectory(),
       Padding(
         padding: const EdgeInsets.only(bottom: 12),
         child: Text(
