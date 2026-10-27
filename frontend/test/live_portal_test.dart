@@ -95,13 +95,14 @@ void main() {
     );
     await tester.tap(find.text('Sign in'));
     await tester.pumpAndSettle();
-    expect(find.text('Assalamu Alaikum, Real Test Student'), findsOneWidget);
+    expect(find.text('Real Test Student'), findsWidgets);
+    expect(find.text('My Quran progress'), findsOneWidget);
     expect(find.text('People'), findsNothing);
     expect(find.text('Assignments'), findsNothing);
     expect(find.text('Reports'), findsNothing);
     expect(find.textContaining('No classes scheduled'), findsOneWidget);
     expect(tester.takeException(), isNull);
-    await tester.tap(find.text('Sign out'));
+    await tester.tap(find.text('Sign out').first);
     await tester.pumpAndSettle();
     expect(find.text('Sign in'), findsOneWidget);
     expect(api.token, isNull);

@@ -12,6 +12,9 @@ Future<void> openPortal(
       : const Size(1440, 1000);
   tester.view.devicePixelRatio = 1;
   await tester.pumpWidget(const AcademyApp());
+  await tester.ensureVisible(
+    find.text(mobile ? 'Explore' : 'Explore the academy'),
+  );
   await tester.tap(find.text(mobile ? 'Explore' : 'Explore the academy'));
   await tester.pumpAndSettle();
   await tester.tap(

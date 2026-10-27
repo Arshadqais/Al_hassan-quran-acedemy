@@ -1,3 +1,4 @@
+import 'academy_design.dart';
 import 'classroom.dart';
 import 'class_chat.dart';
 import 'quran_reader.dart';
@@ -108,6 +109,9 @@ class _LivePortalState extends State<LivePortal> {
   int? studentId, contactId;
   String page = 'Overview', email = '', password = '', error = '';
   bool busy = false, obscure = true;
+  String classTab = 'Upcoming', resourceQuery = '';
+  DateTime calendarMonth = DateTime(DateTime.now().year, DateTime.now().month);
+  DateTime? attendanceDay;
   final loginForm = GlobalKey<FormState>();
   final compose = TextEditingController();
   MessageEvents? chatEvents;
@@ -236,6 +240,9 @@ class _LivePortalState extends State<LivePortal> {
     contactId = null;
     compose.clear();
     page = 'Overview';
+    classTab = 'Upcoming';
+    resourceQuery = '';
+    attendanceDay = null;
   }
 
   Future<void> refreshChat() async {
@@ -350,10 +357,10 @@ class _LivePortalState extends State<LivePortal> {
     color: Colors.white,
     elevation: 0,
     shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(20),
       side: const BorderSide(color: Color(0xFFE4EADF)),
     ),
-    child: Padding(padding: const EdgeInsets.all(22), child: child),
+    child: Padding(padding: const EdgeInsets.all(20), child: child),
   );
   Widget heading(String title, String description) => Padding(
     padding: const EdgeInsets.only(bottom: 22),
@@ -379,77 +386,165 @@ class _LivePortalState extends State<LivePortal> {
       child: Text(text, style: const TextStyle(color: _muted)),
     ),
   );
+  void navigate(String next) => setState(() => page = next);
+  IconData pageIcon(String value) => switch (value) {
+    'Overview' => Icons.home_outlined,
+    'People' => Icons.groups_outlined,
+    'Assignments' => Icons.family_restroom_outlined,
+    'Classes' => Icons.calendar_month_outlined,
+    'Progress' => Icons.insights_outlined,
+    'Attendance' => Icons.event_available_outlined,
+    'Quran' => Icons.menu_book_outlined,
+    'Resources' => Icons.library_books_outlined,
+    'Homework' => Icons.assignment_outlined,
+    'Messages' => Icons.chat_bubble_outline,
+    'Reports' => Icons.bar_chart_outlined,
+    'Feedback' => Icons.star_outline,
+    _ => Icons.person_outline,
+  };
+  String get portalTitle => switch (role) {
+    'admin' => 'Admin Portal',
+    'teacher' => 'Teacher Portal',
+    'parent' => 'Parent Portal',
+    _ => 'Student Portal',
+  };
+  Future<void> signOut() => execute(() async {
+    await api.call('/auth/logout', method: 'POST');
+    clearPrivateState();
+    api.token = null;
+    user = null;
+    password = '';
+  });
   @override
   Widget build(BuildContext context) {
     if (user == null) return loginPage();
     final wide = MediaQuery.sizeOf(context).width > 900;
+    const bottomPages = [
+      'Overview',
+      'Classes',
+      'Progress',
+      'Messages',
+      'Account',
+    ];
     return Scaffold(
+      backgroundColor: academyIvory,
       appBar: AppBar(
-        title: const Text(
-          'Al Hassan · Academy portal',
-          style: TextStyle(fontFamily: 'CormorantGaramond', fontSize: 20),
-        ),
+        backgroundColor: academyIvory,
+        surfaceTintColor: Colors.transparent,
+        toolbarHeight: 78,
+        title: AcademyBrand(subtitle: portalTitle),
         actions: [
           IconButton(
             tooltip: 'Refresh academy records',
             onPressed: busy ? null : () => execute(refresh),
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh, size: 21),
           ),
-          TextButton(
-            onPressed: busy
-                ? null
-                : () => execute(() async {
-                    await api.call('/auth/logout', method: 'POST');
-                    clearPrivateState();
-                    api.token = null;
-                    user = null;
-                    password = '';
-                  }),
-            child: const Text('Sign out'),
+          IconButton(
+            tooltip: 'Messages',
+            onPressed: () => navigate('Messages'),
+            icon: const Badge(
+              smallSize: 6,
+              backgroundColor: academyGold,
+              child: Icon(Icons.notifications_none_rounded),
+            ),
           ),
+          if (wide)
+            TextButton(
+              onPressed: busy ? null : signOut,
+              child: const Text('Sign out'),
+            ),
+          const SizedBox(width: 12),
         ],
       ),
       drawer: wide ? null : Drawer(child: navigation()),
+      bottomNavigationBar: wide
+          ? null
+          : NavigationBar(
+              selectedIndex: bottomPages.contains(page)
+                  ? bottomPages.indexOf(page)
+                  : 0,
+              onDestinationSelected: (index) => navigate(bottomPages[index]),
+              destinations: const [
+                NavigationDestination(
+                  icon: Icon(Icons.home_outlined),
+                  selectedIcon: Icon(Icons.home),
+                  label: 'Home',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.calendar_month_outlined),
+                  label: 'Classes',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.insights_outlined),
+                  label: 'Progress',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.chat_bubble_outline),
+                  label: 'Messages',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.person_outline),
+                  label: 'Profile',
+                ),
+              ],
+            ),
       body: Row(
         children: [
-          if (wide) SizedBox(width: 210, child: navigation()),
+          if (wide) SizedBox(width: 230, child: navigation()),
           Expanded(
-            child: Column(
-              children: [
-                if (busy) const LinearProgressIndicator(),
-                if (error.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Text(
-                      error,
-                      style: const TextStyle(color: Colors.red),
+            child: AcademyBackdrop(
+              child: Column(
+                children: [
+                  if (busy) const LinearProgressIndicator(),
+                  if (error.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                        error,
+                        style: const TextStyle(color: Colors.red),
+                      ),
                     ),
-                  ),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: EdgeInsets.all(wide ? 30 : 16),
-                    child: Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 1100),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Text(
-                              '${user!['name']} · ${role.toUpperCase()} · Connected to academy server',
-                              style: const TextStyle(
-                                color: _muted,
-                                fontSize: 11,
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                            content(),
-                          ],
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: EdgeInsets.all(wide ? 32 : 18),
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 1120),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              if (page != 'Overview')
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 18),
+                                  child: Row(
+                                    children: [
+                                      AcademyAvatar(
+                                        name: user!['name'] as String,
+                                        radius: 17,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          user!['name'] as String,
+                                          style: const TextStyle(
+                                            color: _muted,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              content(),
+                              const SizedBox(height: 26),
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
@@ -462,36 +557,66 @@ class _LivePortalState extends State<LivePortal> {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.all(24),
-          child: Icon(Icons.mosque_outlined, color: _green, size: 36),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(22, 28, 22, 22),
+          child: AcademyBrand(subtitle: portalTitle),
         ),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 24),
+          child: Text(
+            'YOUR ACADEMY',
+            style: TextStyle(fontSize: 10, letterSpacing: 1.8, color: _muted),
+          ),
+        ),
+        const SizedBox(height: 14),
         Expanded(
           child: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
             children: pages
                 .map(
-                  (p) => ListTile(
-                    selected: page == p,
-                    selectedColor: _green,
-                    selectedTileColor: const Color(0xFFEAF1E9),
-                    title: Text(p, style: const TextStyle(fontSize: 13)),
-                    onTap: () {
-                      setState(() => page = p);
-                      if (MediaQuery.sizeOf(context).width <= 900) {
-                        Navigator.pop(context);
-                      }
-                    },
+                  (p) => Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: ListTile(
+                      selected: page == p,
+                      selectedColor: _green,
+                      selectedTileColor: const Color(0xFFEAF1E9),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      leading: Icon(pageIcon(p), size: 21),
+                      title: Text(
+                        p == 'Overview' ? 'Home' : p,
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      onTap: () {
+                        navigate(p);
+                        if (MediaQuery.sizeOf(context).width <= 900) {
+                          Navigator.pop(context);
+                        }
+                      },
+                    ),
                   ),
                 )
                 .toList(),
           ),
         ),
-        const Padding(
-          padding: EdgeInsets.all(20),
-          child: Text(
-            'LIVE PORTAL\nRecords are stored on your academy server.',
-            style: TextStyle(color: _muted, fontSize: 10, height: 1.8),
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: ListTile(
+            leading: AcademyAvatar(name: user!['name'] as String, radius: 18),
+            title: Text(
+              user!['name'] as String,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            ),
+            subtitle: Text(portalTitle, style: const TextStyle(fontSize: 10)),
           ),
+        ),
+        const Divider(height: 1),
+        ListTile(
+          leading: const Icon(Icons.logout, size: 20),
+          title: const Text('Sign out'),
+          onTap: busy ? null : signOut,
         ),
       ],
     ),
@@ -503,113 +628,115 @@ class _LivePortalState extends State<LivePortal> {
         style: TextStyle(fontSize: 17, fontFamily: 'CormorantGaramond'),
       ),
     ),
-    body: Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: SizedBox(
-          width: 430,
-          child: box(
-            Form(
-              key: loginForm,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Icon(Icons.mosque_outlined, color: _green, size: 55),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'Welcome back',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: 'CormorantGaramond',
-                      fontSize: 32,
-                      color: _green,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Sign in to your academy account',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: _muted),
-                  ),
-                  const SizedBox(height: 28),
-                  if (!api.configured) ...[
+    body: AcademyBackdrop(
+      child: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: SizedBox(
+            width: 430,
+            child: box(
+              Form(
+                key: loginForm,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Icon(Icons.mosque_outlined, color: _green, size: 55),
+                    const SizedBox(height: 24),
                     const Text(
-                      'The live academy server has not been connected yet. You can explore the interactive demo from the home page. Real accounts will be available when the academy administrator connects the backend.',
+                      'Welcome back',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        height: 1.8,
-                        color: _muted,
-                        fontSize: 13,
+                        fontFamily: 'CormorantGaramond',
+                        fontSize: 32,
+                        color: _green,
                       ),
                     ),
-                    const SizedBox(height: 20),
-                    OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Back to explore demo'),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Login to your account · Learn. Practice. Grow.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: _muted),
                     ),
-                  ] else ...[
-                    TextFormField(
-                      key: const ValueKey('login-email'),
-                      onChanged: (v) => email = v,
-                      keyboardType: TextInputType.emailAddress,
-                      autofillHints: const [AutofillHints.username],
-                      validator: (v) => v == null || !v.contains('@')
-                          ? 'Enter your email address.'
-                          : null,
-                      decoration: const InputDecoration(
-                        labelText: 'Email',
-                        prefixIcon: Icon(Icons.person_outline),
+                    const SizedBox(height: 28),
+                    if (!api.configured) ...[
+                      const Text(
+                        'The live academy server has not been connected yet. You can explore the interactive demo from the home page. Real accounts will be available when the academy administrator connects the backend.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          height: 1.8,
+                          color: _muted,
+                          fontSize: 13,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      key: const ValueKey('login-password'),
-                      onChanged: (v) => password = v,
-                      obscureText: obscure,
-                      autofillHints: const [AutofillHints.password],
-                      validator: (v) => v == null || v.isEmpty
-                          ? 'Enter your password.'
-                          : null,
-                      onFieldSubmitted: (_) => busy ? null : login(),
-                      decoration: InputDecoration(
-                        labelText: 'Password',
-                        prefixIcon: const Icon(Icons.lock_outline),
-                        suffixIcon: IconButton(
-                          tooltip: 'Toggle password visibility',
-                          onPressed: () => setState(() => obscure = !obscure),
-                          icon: Icon(
-                            obscure
-                                ? Icons.visibility_off_outlined
-                                : Icons.visibility_outlined,
+                      const SizedBox(height: 20),
+                      OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Back to explore demo'),
+                      ),
+                    ] else ...[
+                      TextFormField(
+                        key: const ValueKey('login-email'),
+                        onChanged: (v) => email = v,
+                        keyboardType: TextInputType.emailAddress,
+                        autofillHints: const [AutofillHints.username],
+                        validator: (v) => v == null || !v.contains('@')
+                            ? 'Enter your email address.'
+                            : null,
+                        decoration: const InputDecoration(
+                          labelText: 'Email',
+                          prefixIcon: Icon(Icons.person_outline),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        key: const ValueKey('login-password'),
+                        onChanged: (v) => password = v,
+                        obscureText: obscure,
+                        autofillHints: const [AutofillHints.password],
+                        validator: (v) => v == null || v.isEmpty
+                            ? 'Enter your password.'
+                            : null,
+                        onFieldSubmitted: (_) => busy ? null : login(),
+                        decoration: InputDecoration(
+                          labelText: 'Password',
+                          prefixIcon: const Icon(Icons.lock_outline),
+                          suffixIcon: IconButton(
+                            tooltip: 'Toggle password visibility',
+                            onPressed: () => setState(() => obscure = !obscure),
+                            icon: Icon(
+                              obscure
+                                  ? Icons.visibility_off_outlined
+                                  : Icons.visibility_outlined,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 20),
-                    if (error.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
-                        child: Text(
-                          error,
-                          style: const TextStyle(color: Colors.red),
+                      const SizedBox(height: 20),
+                      if (error.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: Text(
+                            error,
+                            style: const TextStyle(color: Colors.red),
+                          ),
+                        ),
+                      FilledButton(
+                        onPressed: busy ? null : login,
+                        child: Text(busy ? 'Signing in…' : 'Sign in'),
+                      ),
+                      const SizedBox(height: 18),
+                      const Text(
+                        'Accounts are issued by the academy administrator. For access or password help, contact your academy.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: _muted,
+                          fontSize: 11,
+                          height: 1.8,
                         ),
                       ),
-                    FilledButton(
-                      onPressed: busy ? null : login,
-                      child: Text(busy ? 'Signing in…' : 'Sign in'),
-                    ),
-                    const SizedBox(height: 18),
-                    const Text(
-                      'Accounts are issued by the academy administrator. For access or password help, contact your academy.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: _muted,
-                        fontSize: 11,
-                        height: 1.8,
-                      ),
-                    ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ),
@@ -657,90 +784,437 @@ class _LivePortalState extends State<LivePortal> {
     'Account' => accountPage(),
     _ => overview(),
   };
-  Widget overview() => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      heading(
-        'Assalamu Alaikum, ${user!['name']}',
-        'Welcome to your academy. Your records are private to your account.',
-      ),
-      Container(
-        padding: const EdgeInsets.all(28),
-        decoration: BoxDecoration(
-          color: _green,
-          borderRadius: BorderRadius.circular(16),
+  List<dynamic> get upcomingClasses {
+    final now = DateTime.now();
+    final upcoming = classes.where((c) {
+      final raw = c['starts_at'] as String;
+      final start = DateTime.tryParse(
+        raw.endsWith('Z') || RegExp(r'[+-]\d\d:\d\d$').hasMatch(raw)
+            ? raw
+            : '${raw}Z',
+      );
+      return start != null &&
+          start
+              .add(Duration(minutes: (c['duration'] as num?)?.toInt() ?? 30))
+              .isAfter(now);
+    }).toList();
+    upcoming.sort(
+      (a, b) => (a['starts_at'] as String).compareTo(b['starts_at'] as String),
+    );
+    return upcoming;
+  }
+
+  Widget sectionTitle(String title, {String? destination}) => Padding(
+    padding: const EdgeInsets.only(top: 12, bottom: 14),
+    child: Row(
+      children: [
+        Expanded(
+          child: Text(
+            title,
+            style: const TextStyle(
+              fontSize: 15,
+              color: academyInk,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ),
-        child: const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        if (destination != null)
+          TextButton(
+            onPressed: () => navigate(destination),
+            child: const Text('View all', style: TextStyle(fontSize: 11)),
+          ),
+      ],
+    ),
+  );
+  Widget overview() {
+    final upcoming = upcomingClasses;
+    final present = attendance.where((a) => a['present'] == true).length;
+    final rate = attendance.isEmpty
+        ? '—'
+        : '${(present * 100 / attendance.length).round()}%';
+    final pending = homework.where((h) => h['completed'] == false).length;
+    final stats = role == 'admin'
+        ? [
+            ('Students', '${students.length}', Icons.school_outlined, _green),
+            (
+              'Teachers',
+              '${teachers.length}',
+              Icons.person_outline,
+              const Color(0xFF7661AD),
+            ),
+            (
+              'Classes',
+              '${classes.length}',
+              Icons.calendar_month_outlined,
+              const Color(0xFFC88738),
+            ),
+            ('Attendance', rate, Icons.event_available_outlined, _green),
+          ]
+        : [
+            (
+              role == 'parent'
+                  ? 'My children'
+                  : role == 'teacher'
+                  ? 'My students'
+                  : 'My classes',
+              '${role == 'student' ? classes.length : students.length}',
+              Icons.school_outlined,
+              _green,
+            ),
+            (
+              'Upcoming classes',
+              '${upcoming.length}',
+              Icons.calendar_month_outlined,
+              const Color(0xFFC88738),
+            ),
+            ('Attendance', rate, Icons.event_available_outlined, _green),
+            (
+              'Resources',
+              '${resources.length}',
+              Icons.library_books_outlined,
+              const Color(0xFF547DB8),
+            ),
+          ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
           children: [
-            Icon(
-              Icons.auto_stories_outlined,
-              color: Color(0xFFEAD8AC),
-              size: 40,
-            ),
-            SizedBox(height: 18),
-            Text(
-              'Every ayah is a step closer.',
-              style: TextStyle(
-                fontFamily: 'CormorantGaramond',
-                fontSize: 30,
-                color: Colors.white,
+            AcademyAvatar(name: user!['name'] as String),
+            const SizedBox(width: 13),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Assalamu Alaikum,',
+                    style: TextStyle(fontSize: 11, color: _muted),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    user!['name'] as String,
+                    style: const TextStyle(
+                      fontSize: 19,
+                      fontWeight: FontWeight.w700,
+                      color: academyInk,
+                    ),
+                  ),
+                ],
               ),
-            ),
-            SizedBox(height: 12),
-            Text(
-              'Learn. Practice. Grow.',
-              style: TextStyle(color: Color(0xFFCADCCD), letterSpacing: 2),
             ),
           ],
         ),
-      ),
-      const SizedBox(height: 20),
-      Wrap(
-        spacing: 14,
-        runSpacing: 14,
-        children: [
-          stat('Classes', '${classes.length}'),
-          stat(
-            role == 'parent' ? 'My children' : 'Students',
-            '${students.length}',
-          ),
-          stat(
-            'Homework',
-            '${homework.where((h) => h['completed'] == false).length} pending',
-          ),
-        ],
-      ),
-      const SizedBox(height: 20),
-      heading(
-        'Your next classes',
-        'Times are shown in your device’s timezone.',
-      ),
-      if (classes.isEmpty)
-        blank(
-          'No classes scheduled yet. Your teacher or administrator can add your next lesson.',
+        const SizedBox(height: 8),
+        Text(
+          MaterialLocalizations.of(context).formatFullDate(DateTime.now()),
+          textAlign: TextAlign.right,
+          style: const TextStyle(fontSize: 10, color: _muted),
         ),
-      ...classes.take(3).map(classCard),
-    ],
-  );
-  Widget stat(String label, String value) => SizedBox(
-    width: 210,
-    child: box(
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 26,
-              color: _green,
-              fontWeight: FontWeight.bold,
+        const SizedBox(height: 22),
+        if (role == 'student' || role == 'parent') nextLessonBanner(upcoming),
+        LayoutBuilder(
+          builder: (context, c) {
+            final count = c.maxWidth > 700 ? 4 : 2;
+            final width = (c.maxWidth - (count - 1) * 12) / count;
+            return Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: stats
+                  .map(
+                    (s) => SizedBox(
+                      width: width,
+                      child: dashboardStat(s.$1, s.$2, s.$3, s.$4),
+                    ),
+                  )
+                  .toList(),
+            );
+          },
+        ),
+        if (role == 'parent') ...[
+          sectionTitle('My children'),
+          if (students.isEmpty)
+            blank('No children are linked to your account yet.'),
+          ...students.map(
+            (child) => box(
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: AcademyAvatar(
+                  name: child['name'] as String,
+                  radius: 20,
+                ),
+                title: Text(
+                  child['name'] as String,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: Text(child['level'] as String? ?? 'Student'),
+                trailing: const Icon(Icons.chevron_right, size: 19),
+                onTap: () => execute(() async {
+                  studentId = child['id'] as int;
+                  progress =
+                      await api.call('/students/$studentId/progress') as List;
+                  page = 'Progress';
+                }),
+              ),
             ),
           ),
-          const SizedBox(height: 8),
-          Text(label, style: const TextStyle(color: _muted)),
         ],
+        if (role == 'student' || role == 'parent') ...[
+          sectionTitle(
+            role == 'parent' ? "Child’s progress" : 'My Quran progress',
+            destination: 'Progress',
+          ),
+          if (progress.isEmpty)
+            blank('Your teacher-recorded Quran progress will appear here.'),
+          ...progress.take(2).map(progressCard),
+        ],
+        sectionTitle('Quick actions'),
+        box(
+          Wrap(
+            alignment: WrapAlignment.spaceAround,
+            runSpacing: 18,
+            children: [
+              if (role == 'admin')
+                AcademyQuickAction(
+                  label: 'Add student',
+                  icon: Icons.person_add_alt_1_outlined,
+                  onTap: busy ? null : () => addAccount(accountRole: 'student'),
+                ),
+              if (role == 'admin')
+                AcademyQuickAction(
+                  label: 'Add teacher',
+                  icon: Icons.school_outlined,
+                  color: const Color(0xFF547DB8),
+                  onTap: busy ? null : () => addAccount(accountRole: 'teacher'),
+                ),
+              if (editor)
+                AcademyQuickAction(
+                  label: 'Create class',
+                  icon: Icons.calendar_month_outlined,
+                  color: const Color(0xFF547DB8),
+                  onTap: busy ? null : scheduleClass,
+                ),
+              if (!editor)
+                AcademyQuickAction(
+                  label: 'My classes',
+                  icon: Icons.calendar_month_outlined,
+                  onTap: () => navigate('Classes'),
+                ),
+              if (role != 'admin')
+                AcademyQuickAction(
+                  label: 'Quran',
+                  icon: Icons.menu_book_outlined,
+                  onTap: () => navigate('Quran'),
+                ),
+              AcademyQuickAction(
+                label: role == 'admin' ? 'Reports' : 'Homework',
+                icon: Icons.assignment_outlined,
+                color: const Color(0xFFC88738),
+                onTap: () => navigate(role == 'admin' ? 'Reports' : 'Homework'),
+              ),
+              if (role != 'admin')
+                AcademyQuickAction(
+                  label: 'Messages',
+                  icon: Icons.chat_bubble_outline,
+                  onTap: () => navigate('Messages'),
+                ),
+            ],
+          ),
+        ),
+        sectionTitle(
+          role == 'teacher' ? 'Your teaching schedule' : 'Your next classes',
+          destination: 'Classes',
+        ),
+        if (upcoming.isEmpty)
+          blank(
+            'No classes scheduled yet. Your teacher or administrator can add your next lesson.',
+          ),
+        ...upcoming.take(3).map(classCard),
+        sectionTitle('Recent homework', destination: 'Homework'),
+        if (homework.isEmpty) blank('No homework assigned yet.'),
+        ...homework
+            .take(3)
+            .map(
+              (h) => box(
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(
+                    h['completed'] == true
+                        ? Icons.task_alt
+                        : Icons.assignment_outlined,
+                    color: h['completed'] == true
+                        ? _green
+                        : const Color(0xFFC88738),
+                  ),
+                  title: Text(
+                    h['title'] as String,
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                  subtitle: Text(
+                    h['completed'] == true
+                        ? 'Completed'
+                        : '$pending assignment(s) pending',
+                    style: const TextStyle(fontSize: 11, color: _muted),
+                  ),
+                  onTap: () => navigate('Homework'),
+                ),
+              ),
+            ),
+      ],
+    );
+  }
+
+  Widget dashboardStat(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) => Container(
+    padding: const EdgeInsets.all(17),
+    decoration: BoxDecoration(
+      color: Colors.white.withValues(alpha: .95),
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(color: const Color(0xFFEEEFE7)),
+    ),
+    child: Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(9),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: .08),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: color, size: 21),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 22,
+                  color: color,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              Text(label, style: const TextStyle(fontSize: 10, color: _muted)),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+  Widget nextLessonBanner(List<dynamic> upcoming) => Container(
+    margin: const EdgeInsets.only(bottom: 20),
+    padding: const EdgeInsets.all(23),
+    decoration: BoxDecoration(
+      gradient: const LinearGradient(
+        colors: [Color(0xFF123E30), Color(0xFF1E7859)],
       ),
+      borderRadius: BorderRadius.circular(20),
+    ),
+    child: Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'YOUR NEXT CLASS',
+                style: TextStyle(
+                  fontSize: 10,
+                  letterSpacing: 1.3,
+                  color: Color(0xFFCADCCD),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                upcoming.isEmpty
+                    ? 'Your journey starts here'
+                    : upcoming.first['title'] as String,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontFamily: 'CormorantGaramond',
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Learn. Practice. Grow.',
+                style: TextStyle(fontSize: 11, color: Color(0xFFE5D5AC)),
+              ),
+              const SizedBox(height: 12),
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFFE8F3E8),
+                  foregroundColor: _green,
+                ),
+                onPressed: () => navigate('Classes'),
+                child: const Text('View classes'),
+              ),
+            ],
+          ),
+        ),
+        const Icon(Icons.mosque_outlined, color: Color(0xFF89B49B), size: 68),
+      ],
+    ),
+  );
+  Widget progressCard(dynamic p) => box(
+    Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                p['surah'] as String,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                p['percent'] == 100 ? 'Completed' : 'In progress',
+                style: const TextStyle(fontSize: 11, color: _muted),
+              ),
+              const SizedBox(height: 14),
+              LinearProgressIndicator(
+                value: (p['percent'] as num) / 100,
+                minHeight: 5,
+                color: _green,
+                backgroundColor: const Color(0xFFE6EEE5),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 22),
+        SizedBox(
+          width: 47,
+          height: 47,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox.expand(
+                child: CircularProgressIndicator(
+                  value: (p['percent'] as num) / 100,
+                  strokeWidth: 3,
+                  color: _green,
+                  backgroundColor: const Color(0xFFE6EEE5),
+                ),
+              ),
+              Text(
+                '${p['percent']}%',
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     ),
   );
   Widget peoplePage() => Column(
@@ -858,7 +1332,7 @@ class _LivePortalState extends State<LivePortal> {
     );
   }
 
-  Future<void> addAccount() async {
+  Future<void> addAccount({String? accountRole}) async {
     final data = await formDialog(
       'Create academy account',
       [
@@ -867,7 +1341,15 @@ class _LivePortalState extends State<LivePortal> {
         ('Initial password', '', true),
         ('Level / specialty', 'Level 1', false),
       ],
-      options: ['student', 'teacher', 'parent', 'admin'],
+      options: [
+        ?accountRole,
+        ...[
+          'student',
+          'teacher',
+          'parent',
+          'admin',
+        ].where((r) => r != accountRole),
+      ],
     );
     if (data != null && mounted) {
       await save('/users', {
@@ -916,25 +1398,72 @@ class _LivePortalState extends State<LivePortal> {
           ),
         ),
       const SizedBox(height: 20),
-      if (classes.isEmpty) blank('No classes have been scheduled.'),
-      ...classes.map(classCard),
+      SegmentedButton<String>(
+        segments: const [
+          ButtonSegment(value: 'Upcoming', label: Text('Upcoming')),
+          ButtonSegment(value: 'Past', label: Text('Past')),
+        ],
+        selected: {classTab},
+        onSelectionChanged: (v) => setState(() => classTab = v.first),
+      ),
+      const SizedBox(height: 20),
+      if (visibleClasses.isEmpty)
+        blank(
+          classTab == 'Upcoming'
+              ? 'No upcoming classes have been scheduled.'
+              : 'No past classes yet.',
+        ),
+      ...visibleClasses.map(classCard),
     ],
   );
+  List<dynamic> get visibleClasses => classTab == 'Upcoming'
+      ? upcomingClasses
+      : classes
+            .where((c) => !upcomingClasses.any((u) => u['id'] == c['id']))
+            .toList();
+  DateTime classDate(dynamic c) {
+    final raw = c['starts_at'] as String;
+    return DateTime.parse(
+      raw.endsWith('Z') || RegExp(r'[+-]\d\d:\d\d$').hasMatch(raw)
+          ? raw
+          : '${raw}Z',
+    ).toLocal();
+  }
+
   Widget classCard(dynamic c) {
-    final date = DateTime.parse('${c['starts_at']}Z').toLocal();
+    final date = classDate(c);
     return box(
       Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            c['title'] as String,
-            style: const TextStyle(
-              fontFamily: 'CormorantGaramond',
-              fontSize: 22,
-              color: _green,
-            ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(9),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEDF4EC),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.calendar_month_outlined,
+                  color: _green,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  c['title'] as String,
+                  style: const TextStyle(
+                    fontFamily: 'CormorantGaramond',
+                    fontSize: 22,
+                    color: _green,
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
             '${c['teacher']} · ${c['category']} · ${c['duration']} min',
             style: const TextStyle(color: _muted, fontSize: 12),
@@ -1056,24 +1585,19 @@ class _LivePortalState extends State<LivePortal> {
       if (progress.isEmpty)
         blank('No progress has been recorded for this student.'),
       ...progress.map(
-        (p) => box(
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '${p['surah']} · ${p['percent']}%',
-                style: const TextStyle(fontWeight: FontWeight.bold),
+        (p) => Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            progressCard(p),
+            if ((p['notes'] as String? ?? '').isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 0, 8, 20),
+                child: Text(
+                  p['notes'] as String,
+                  style: const TextStyle(fontSize: 12, color: _muted),
+                ),
               ),
-              const SizedBox(height: 16),
-              LinearProgressIndicator(
-                value: (p['percent'] as num) / 100,
-                color: _green,
-                backgroundColor: _cream,
-              ),
-              const SizedBox(height: 12),
-              Text(p['notes'] as String, style: const TextStyle(color: _muted)),
-            ],
-          ),
+          ],
         ),
       ),
     ],
@@ -1082,6 +1606,7 @@ class _LivePortalState extends State<LivePortal> {
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
       heading('Attendance', 'A record of each lesson attended.'),
+      attendanceCalendar(),
       if (editor && classes.isNotEmpty && students.isNotEmpty)
         Align(
           alignment: Alignment.centerLeft,
@@ -1091,17 +1616,31 @@ class _LivePortalState extends State<LivePortal> {
           ),
         ),
       const SizedBox(height: 20),
-      if (attendance.isEmpty) blank('No attendance recorded yet.'),
-      ...attendance.map(
+      if (visibleAttendance.isEmpty)
+        blank('No attendance recorded for this selection.'),
+      ...visibleAttendance.map(
         (a) => box(
           ListTile(
             contentPadding: EdgeInsets.zero,
             title: Text(className(a['session_id'])),
             subtitle: Text(person(a['student_id'])),
-            trailing: Text(
-              a['present'] == true ? 'Present' : 'Absent',
-              style: TextStyle(
-                color: a['present'] == true ? _green : Colors.red,
+            leading: Icon(
+              a['present'] == true
+                  ? Icons.event_available_outlined
+                  : Icons.event_busy_outlined,
+              color: a['present'] == true ? _green : Colors.redAccent,
+            ),
+            trailing: Chip(
+              backgroundColor: a['present'] == true
+                  ? const Color(0xFFE8F5EA)
+                  : const Color(0xFFFFEFEB),
+              side: BorderSide.none,
+              label: Text(
+                a['present'] == true ? 'Present' : 'Absent',
+                style: TextStyle(
+                  color: a['present'] == true ? _green : Colors.red,
+                  fontSize: 11,
+                ),
               ),
             ),
           ),
@@ -1109,6 +1648,135 @@ class _LivePortalState extends State<LivePortal> {
       ),
     ],
   );
+  List<dynamic> get visibleAttendance => attendanceDay == null
+      ? attendance
+      : attendance.where((a) {
+          final session = classes
+              .where((c) => c['id'] == a['session_id'])
+              .firstOrNull;
+          if (session == null) return false;
+          return DateUtils.isSameDay(classDate(session), attendanceDay);
+        }).toList();
+  Widget attendanceCalendar() {
+    final first = DateTime(calendarMonth.year, calendarMonth.month);
+    final days = DateUtils.getDaysInMonth(first.year, first.month);
+    final offset = first.weekday % 7;
+    final classDays = classes.map(classDate).toList();
+    return box(
+      Column(
+        children: [
+          Row(
+            children: [
+              IconButton(
+                tooltip: 'Previous month',
+                onPressed: () => setState(() {
+                  calendarMonth = DateTime(first.year, first.month - 1);
+                  attendanceDay = null;
+                }),
+                icon: const Icon(Icons.chevron_left),
+              ),
+              Expanded(
+                child: Text(
+                  MaterialLocalizations.of(context).formatMonthYear(first),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+              IconButton(
+                tooltip: 'Next month',
+                onPressed: () => setState(() {
+                  calendarMonth = DateTime(first.year, first.month + 1);
+                  attendanceDay = null;
+                }),
+                icon: const Icon(Icons.chevron_right),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+                .map(
+                  (day) => Expanded(
+                    child: Text(
+                      day,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 10, color: _muted),
+                    ),
+                  ),
+                )
+                .toList(),
+          ),
+          const SizedBox(height: 8),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 7,
+              mainAxisExtent: 40,
+            ),
+            itemCount: offset + days,
+            itemBuilder: (context, index) {
+              if (index < offset) return const SizedBox.shrink();
+              final day = DateTime(first.year, first.month, index - offset + 1);
+              final selected = DateUtils.isSameDay(day, attendanceDay);
+              final hasClass = classDays.any(
+                (d) => DateUtils.isSameDay(d, day),
+              );
+              return Center(
+                child: SizedBox(
+                  width: 35,
+                  height: 35,
+                  child: TextButton(
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      backgroundColor: selected ? _green : Colors.transparent,
+                      foregroundColor: selected ? Colors.white : academyInk,
+                      shape: CircleBorder(
+                        side: BorderSide(
+                          color: DateUtils.isSameDay(day, DateTime.now())
+                              ? academyGold
+                              : Colors.transparent,
+                        ),
+                      ),
+                    ),
+                    onPressed: () =>
+                        setState(() => attendanceDay = selected ? null : day),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          '${day.day}',
+                          style: const TextStyle(fontSize: 11),
+                        ),
+                        if (hasClass)
+                          Container(
+                            width: 3,
+                            height: 3,
+                            decoration: BoxDecoration(
+                              color: selected ? Colors.white : _green,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+          TextButton(
+            onPressed: () => setState(() => attendanceDay = null),
+            child: Text(
+              attendanceDay == null
+                  ? 'Showing all records'
+                  : 'Show all records',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> markAttendance() async {
     final data = await showDialog<Map<String, dynamic>>(
       context: context,
@@ -1126,6 +1794,14 @@ class _LivePortalState extends State<LivePortal> {
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
       heading('Learning resources', 'Study notes assigned by your teacher.'),
+      TextField(
+        onChanged: (v) => setState(() => resourceQuery = v),
+        decoration: const InputDecoration(
+          hintText: 'Search learning resources…',
+          prefixIcon: Icon(Icons.search),
+        ),
+      ),
+      const SizedBox(height: 20),
       if (editor && students.isNotEmpty)
         Align(
           alignment: Alignment.centerLeft,
@@ -1152,38 +1828,51 @@ class _LivePortalState extends State<LivePortal> {
         ),
       const SizedBox(height: 20),
       if (resources.isEmpty) blank('No resources assigned yet.'),
-      ...resources.map(
-        (r) => box(
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.description_outlined, color: _green),
-            title: Text(r['title'] as String),
-            subtitle: Text('For ${person(r['student_id'])}'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => showDialog<void>(
-              context: context,
-              builder: (c) => AlertDialog(
+      ...resources
+          .where(
+            (r) => (r['title'] as String).toLowerCase().contains(
+              resourceQuery.toLowerCase(),
+            ),
+          )
+          .map(
+            (r) => box(
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Container(
+                  padding: const EdgeInsets.all(11),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFECF3ED),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.description_outlined, color: _green),
+                ),
                 title: Text(r['title'] as String),
-                content: SizedBox(
-                  width: 550,
-                  child: SingleChildScrollView(
-                    child: SelectableText(
-                      r['content'] as String,
-                      style: const TextStyle(height: 1.8),
+                subtitle: Text('For ${person(r['student_id'])}'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => showDialog<void>(
+                  context: context,
+                  builder: (c) => AlertDialog(
+                    title: Text(r['title'] as String),
+                    content: SizedBox(
+                      width: 550,
+                      child: SingleChildScrollView(
+                        child: SelectableText(
+                          r['content'] as String,
+                          style: const TextStyle(height: 1.8),
+                        ),
+                      ),
                     ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(c),
+                        child: const Text('Close'),
+                      ),
+                    ],
                   ),
                 ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(c),
-                    child: const Text('Close'),
-                  ),
-                ],
               ),
             ),
           ),
-        ),
-      ),
     ],
   );
   Future<int?> pickStudent() => showDialog<int>(
@@ -1397,7 +2086,21 @@ class _LivePortalState extends State<LivePortal> {
   Widget accountPage() => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      heading('My account', 'Your academy profile and account security.'),
+      heading('My profile', 'Your academy profile and account security.'),
+      box(
+        Column(
+          children: [
+            AcademyAvatar(name: user!['name'] as String, radius: 44),
+            const SizedBox(height: 14),
+            Text(
+              user!['name'] as String,
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 6),
+            Text(portalTitle, style: const TextStyle(color: _muted)),
+          ],
+        ),
+      ),
       box(
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1448,6 +2151,10 @@ class _LivePortalState extends State<LivePortal> {
         ),
       ),
     ],
+  );
+  Widget stat(String label, String value) => SizedBox(
+    width: 210,
+    child: dashboardStat(label, value, pageIcon(label), _green),
   );
   Widget reportPage() => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,

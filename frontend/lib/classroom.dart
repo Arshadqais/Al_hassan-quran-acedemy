@@ -259,7 +259,10 @@ class _ClassroomState extends State<Classroom> {
                         );
                       }),
                     ),
-                  OutlinedButton.icon(
+                  FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFFE85750),
+                    ),
                     onPressed: () => Navigator.pop(context),
                     icon: const Icon(Icons.call_end, color: Color(0xFFFFB9A9)),
                     label: const Text(
@@ -276,12 +279,23 @@ class _ClassroomState extends State<Classroom> {
     );
   }
 
-  Widget control(IconData icon, String label, VoidCallback action) =>
-      OutlinedButton.icon(
+  Widget control(IconData icon, String label, VoidCallback action) => Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      IconButton.filledTonal(
+        tooltip: label,
+        style: IconButton.styleFrom(
+          backgroundColor: const Color(0xFF315447),
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.all(15),
+        ),
         onPressed: connecting || changing || error.isNotEmpty ? null : action,
-        icon: Icon(icon, color: Colors.white),
-        label: Text(label, style: const TextStyle(color: Colors.white)),
-      );
+        icon: Icon(icon, color: Colors.white, size: 23),
+      ),
+      const SizedBox(height: 7),
+      Text(label, style: const TextStyle(color: Colors.white, fontSize: 10)),
+    ],
+  );
   Widget tile(String name, Widget content) => ClipRRect(
     borderRadius: BorderRadius.circular(16),
     child: Container(

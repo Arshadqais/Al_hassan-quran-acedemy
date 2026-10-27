@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'live_portal.dart';
+import 'academy_design.dart';
 
 const green = Color(0xFF145B45);
 const dark = Color(0xFF143B30);
 const gold = Color(0xFFBA9758);
-const cream = Color(0xFFF8F7F2);
+const cream = academyIvory;
 const muted = Color(0xFF77867D);
 const pale = Color(0xFFEAF1E9);
 void main() => runApp(const AcademyApp());
@@ -18,6 +19,29 @@ class AcademyApp extends StatelessWidget {
     debugShowCheckedModeBanner: false,
     theme: ThemeData(
       useMaterial3: true,
+      appBarTheme: const AppBarTheme(
+        backgroundColor: academyIvory,
+        foregroundColor: academyInk,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+      ),
+      navigationBarTheme: const NavigationBarThemeData(
+        backgroundColor: Colors.white,
+        indicatorColor: pale,
+        height: 70,
+        labelTextStyle: WidgetStatePropertyAll(
+          TextStyle(fontSize: 10, color: dark),
+        ),
+      ),
+      dividerTheme: const DividerThemeData(
+        color: Color(0xFFECEDE5),
+        thickness: 1,
+      ),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: green,
+        linearTrackColor: pale,
+        borderRadius: BorderRadius.all(Radius.circular(9)),
+      ),
       colorScheme: ColorScheme.fromSeed(
         seedColor: green,
         primary: green,
@@ -180,7 +204,9 @@ class _AcademyShellState extends State<AcademyShell> {
     final wide = MediaQuery.sizeOf(context).width >= 1050;
     if (!entered) {
       return Scaffold(
-        body: SafeArea(child: rolePicker ? chooseRole() : landing()),
+        body: AcademyBackdrop(
+          child: SafeArea(child: rolePicker ? chooseRole() : landing()),
+        ),
       );
     }
     return Scaffold(
@@ -301,226 +327,118 @@ class _AcademyShellState extends State<AcademyShell> {
   Widget landing() => LayoutBuilder(
     builder: (context, c) {
       final desktop = c.maxWidth > 850;
+      final welcome = Column(
+        crossAxisAlignment: desktop
+            ? CrossAxisAlignment.start
+            : CrossAxisAlignment.center,
+        children: [
+          pill('LEARN · PRACTICE · GROW', gold),
+          const SizedBox(height: 22),
+          Text(
+            'Welcome to\nAl Hassan Online\nQuran Academy',
+            textAlign: desktop ? TextAlign.left : TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'CormorantGaramond',
+              fontSize: desktop ? 57 : 35,
+              height: 1.08,
+              color: dark,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 22),
+          Text(
+            'Learn Quran with qualified teachers,\nfrom anywhere in the world.',
+            textAlign: desktop ? TextAlign.left : TextAlign.center,
+            style: const TextStyle(fontSize: 14, height: 1.8, color: muted),
+          ),
+          const SizedBox(height: 30),
+          SizedBox(
+            width: 350,
+            child: FilledButton(
+              onPressed: signIn,
+              child: const Text('Academy sign in'),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: 350,
+            child: OutlinedButton(
+              onPressed: () => setState(() => rolePicker = true),
+              child: Text(desktop ? 'Explore the academy' : 'Explore'),
+            ),
+          ),
+          const SizedBox(height: 18),
+          const Text(
+            'A place for students, teachers, and families.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 11, color: muted),
+          ),
+        ],
+      );
       return SingleChildScrollView(
-        child: Column(
-          children: [
-            Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: desktop ? 64 : 20,
-                vertical: 24,
-              ),
-              child: Row(
-                children: [
-                  brand(small: !desktop),
-                  const Spacer(),
-                  if (c.maxWidth > 1200) ...[
-                    TextButton(
-                      onPressed: signIn,
-                      child: const Text('Academy sign in'),
-                    ),
-                    TextButton(
-                      onPressed: () => showAbout(),
-                      child: const Text('About the academy'),
-                    ),
-                    const SizedBox(width: 24),
-                  ],
-                  FilledButton(
-                    onPressed: () => setState(() => rolePicker = true),
-                    child: Text(desktop ? 'Explore the academy' : 'Explore'),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1200),
+            child: Column(
+              children: [
+                Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: desktop ? 48 : 22,
+                    vertical: 22,
                   ),
-                ],
-              ),
-            ),
-            Container(
-              constraints: const BoxConstraints(maxWidth: 1400),
-              padding: EdgeInsets.fromLTRB(
-                desktop ? 72 : 24,
-                desktop ? 64 : 32,
-                desktop ? 72 : 24,
-                48,
-              ),
-              child: Flex(
-                direction: desktop ? Axis.horizontal : Axis.vertical,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  FlexibleOrBox(
-                    flex: desktop,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        pill('A JOURNEY OF KNOWLEDGE & FAITH', gold),
-                        const SizedBox(height: 26),
-                        Text(
-                          'Closer to the Quran.\nCloser to your faith.',
-                          style: TextStyle(
-                            fontFamily: 'CormorantGaramond',
-                            fontSize: desktop ? 62 : 42,
-                            height: 1.13,
-                            letterSpacing: -2,
-                            color: dark,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        const Text(
-                          'Learn, practice, and grow with Al Hassan Online Quran Academy. Thoughtful teaching. Meaningful progress. Wherever you call home.',
-                          style: TextStyle(
-                            fontSize: 17,
-                            height: 1.8,
-                            color: muted,
-                          ),
-                        ),
-                        const SizedBox(height: 32),
-                        Wrap(
-                          spacing: 12,
-                          runSpacing: 12,
-                          children: [
-                            FilledButton.icon(
-                              onPressed: () =>
-                                  setState(() => rolePicker = true),
-                              icon: const Icon(Icons.arrow_forward, size: 18),
-                              label: const Text('Explore your dashboard'),
-                            ),
-                            OutlinedButton(
-                              onPressed: showAbout,
-                              child: const Text('Discover our programs'),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 30),
-                        const Row(
-                          children: [
-                            Icon(
-                              Icons.verified_outlined,
-                              color: green,
-                              size: 18,
-                            ),
-                            SizedBox(width: 8),
-                            Flexible(
-                              child: Text(
-                                'Qualified guidance  ·  Flexible learning  ·  All ages',
-                                style: TextStyle(color: muted, fontSize: 12),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 24),
-                      ],
-                    ),
+                  child: Row(
+                    children: [
+                      brand(small: !desktop),
+                      const Spacer(),
+                      IconButton(
+                        onPressed: showAbout,
+                        tooltip: 'About the academy',
+                        icon: const Icon(Icons.info_outline, color: green),
+                      ),
+                    ],
                   ),
-                  if (desktop) const SizedBox(width: 55),
-                  FlexibleOrBox(
-                    flex: desktop,
-                    child: SizedBox(
-                      height: desktop ? 470 : 350,
-                      width: double.infinity,
-                      child: const FaithArtwork(),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              color: pale,
-              padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 24),
-              child: Center(
-                child: Wrap(
-                  spacing: 64,
-                  runSpacing: 24,
-                  alignment: WrapAlignment.center,
-                  children: [
-                    feature(
-                      Icons.menu_book_outlined,
-                      'Quran & Tajweed',
-                      'Build a beautiful foundation',
-                    ),
-                    feature(
-                      Icons.auto_awesome_outlined,
-                      'Hifz & memorization',
-                      'One meaningful ayah at a time',
-                    ),
-                    feature(
-                      Icons.family_restroom_outlined,
-                      'A connected academy',
-                      'Teachers, students & families',
-                    ),
-                  ],
                 ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(40),
-              child: Column(
-                children: [
-                  const Text(
-                    'One academy. Every step of your journey.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: 'CormorantGaramond',
-                      fontSize: 30,
-                      color: dark,
-                    ),
+                Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    desktop ? 48 : 26,
+                    desktop ? 20 : 0,
+                    desktop ? 48 : 26,
+                    35,
                   ),
-                  const SizedBox(height: 14),
-                  const Text(
-                    'A dedicated space for everyone who makes learning possible.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: muted),
-                  ),
-                  const SizedBox(height: 28),
-                  Wrap(
-                    spacing: 16,
-                    runSpacing: 16,
-                    alignment: WrapAlignment.center,
-                    children: ['Admin', 'Teacher', 'Student', 'Parent']
-                        .map(
-                          (r) => SizedBox(
-                            width: 230,
-                            child: InkWell(
-                              onTap: () => enter(r),
-                              borderRadius: BorderRadius.circular(16),
-                              child: panel(
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Icon(roleIcon(r), color: green, size: 28),
-                                    const SizedBox(height: 20),
-                                    Text(
-                                      '$r portal',
-                                      style: const TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      roleDescription(r),
-                                      style: const TextStyle(
-                                        color: muted,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 20),
-                                    const Text(
-                                      'Explore demo  →',
-                                      style: TextStyle(
-                                        color: green,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                  child: desktop
+                      ? Row(
+                          children: [
+                            const Expanded(
+                              child: Padding(
+                                padding: EdgeInsets.only(right: 68),
+                                child: AcademyIllustration(),
                               ),
                             ),
-                          ),
+                            Expanded(child: welcome),
+                          ],
                         )
-                        .toList(),
+                      : Column(
+                          children: [
+                            const SizedBox(
+                              width: 240,
+                              child: AcademyIllustration(),
+                            ),
+                            const SizedBox(height: 26),
+                            welcome,
+                          ],
+                        ),
+                ),
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 24),
+                  child: Text(
+                    'Quran recitation  ·  Tajweed  ·  Memorization',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: muted, fontSize: 11),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            footer(),
-            const SizedBox(height: 24),
-          ],
+          ),
         ),
       );
     },
@@ -579,7 +497,7 @@ class _AcademyShellState extends State<AcademyShell> {
             ),
             const SizedBox(height: 10),
             const Text(
-              'Choose your space in the academy',
+              'Select your role to explore the demo',
               style: TextStyle(color: muted),
             ),
             const SizedBox(height: 30),
@@ -598,7 +516,10 @@ class _AcademyShellState extends State<AcademyShell> {
                             color: pale,
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Icon(roleIcon(r), color: green),
+                          child: Icon(
+                            roleIcon(r),
+                            color: const Color(0xFF89703D),
+                          ),
                         ),
                         const SizedBox(width: 18),
                         Expanded(
@@ -2553,7 +2474,7 @@ Widget panel(Widget child) => SizedBox(
   child: Material(
     color: Colors.white,
     shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(15),
+      borderRadius: BorderRadius.circular(20),
       side: const BorderSide(color: Color(0xFFE7EBE3)),
     ),
     child: Padding(padding: const EdgeInsets.all(22), child: child),
