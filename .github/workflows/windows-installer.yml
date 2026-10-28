@@ -48,6 +48,7 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw 'Could not install Inno Setup on build runner' }
           }
       - name: Probe portable PostgreSQL before packaging
+        timeout-minutes: 5
         shell: pwsh
         run: |
           python -m pip install python-dotenv==1.2.4 pefile==2024.8.26

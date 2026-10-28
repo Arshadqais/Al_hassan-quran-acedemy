@@ -27,8 +27,24 @@ def windows_flags():
 
 
 def run(command, *, env=None, timeout=120, check=True, input_text=None):
-    result = subprocess.run([str(v) for v in command], env=env, input=input_text,
-        text=True, capture_output=True, timeout=timeout, creationflags=windows_flags())
+    process = subprocess.Popen([str(v) for v in command], env=env,
+        stdin=subprocess.PIPE if input_text is not None else subprocess.DEVNULL,
+        text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, creationflags=windows_flags())
+    try:
+        stdout, stderr = process.communicate(input=input_text, timeout=timeout)
+    except subprocess.TimeoutExpired as exc:
+        if os.name == "nt":
+            subprocess.run(["taskkill", "/PID", str(process.pid), "/T", "/F"],
+                capture_output=True, timeout=15, creationflags=windows_flags())
+        else:
+            process.kill()
+        try:
+            stdout, stderr = process.communicate(timeout=10)
+        except subprocess.TimeoutExpired:
+            stdout, stderr = exc.stdout or "", exc.stderr or ""
+        raise DesktopError(f"{Path(str(command[0])).name} timed out. Startup was stopped.",
+            f"{stdout}\n{stderr}") from exc
+    result = subprocess.CompletedProcess(command, process.returncode, stdout, stderr)
     if check and result.returncode:
         raise DesktopError(f"{Path(str(command[0])).name} could not complete. Check the private log folder or contact your developer.",
             f"Exit code: {result.returncode}\n{result.stdout}\n{result.stderr}")

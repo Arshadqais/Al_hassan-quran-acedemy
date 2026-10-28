@@ -8,7 +8,19 @@ import unittest
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'packaging' / 'windows'))
-from desktop_runtime import DesktopRuntime, DesktopError
+from desktop_runtime import DesktopRuntime, DesktopError, run
+
+
+class ProcessTests(unittest.TestCase):
+    def test_private_input_uses_stdin(self):
+        result = run([sys.executable, "-c", "import sys; print(len(sys.stdin.read()))"], input_text="private")
+        self.assertEqual(result.stdout.strip(), "7")
+
+    def test_timeout_reports_captured_output(self):
+        with self.assertRaises(DesktopError) as caught:
+            run([sys.executable, "-c", "import time; print('starting', flush=True); time.sleep(30)"], timeout=1)
+        self.assertIn("timed out", str(caught.exception))
+        self.assertIn("starting", caught.exception.diagnostics)
 
 
 class ClientDataTests(unittest.TestCase):
