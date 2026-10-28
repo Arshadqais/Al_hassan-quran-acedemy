@@ -8,8 +8,9 @@ public HTTPS access to this host's backend has been configured separately.
 
 The installer/build pipeline is a preview until the Windows workflow and a real
 client hardware acceptance test pass. Do not describe a source commit alone as
-a successfully tested downloadable installer. The initial pipeline creates a
-GitHub Actions artifact, not a public GitHub Release automatically.
+a successfully tested downloadable installer. The build first creates a GitHub Actions artifact. A separate publisher verifies
+the checksum and smoke-test report, then creates a clearly marked public preview
+release only after the Windows checks pass.
 
 ## 1. Build and obtain the installer (developer)
 
@@ -29,10 +30,12 @@ installer → Run workflow** and specify a version such as `0.1.0`. The workflow
 7. Uploads the installer, SHA-256 checksum, and `windows-smoke-result.json` only
    after those checks pass.
 
-Download the **AlHassanAcademy-Windows-x64** artifact from the successful run and
-extract the installer. Artifacts are retained for 30 days and may require a
-GitHub sign-in. Send the actual installer/checksum privately to the client, or
-publish the verified artifact as a GitHub Release when ready. Building and
+After a successful build, open **Releases** and download the tested Windows
+preview installer. Alternatively, download the **AlHassanAcademy-Windows-x64**
+artifact from the successful run and extract the installer. Artifacts are retained for 30 days and may require a
+GitHub sign-in. Send the verified installer/checksum to the client for acceptance testing. The
+preview release is unsigned and is not a claim that physical hardware checks
+have already passed. Building and
 publishing from your Mac uses GitHub's Windows runner; it does not use your Mac
 as the live academy server.
 

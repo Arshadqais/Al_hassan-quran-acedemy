@@ -1,0 +1,58 @@
+name: Publish tested Windows preview
+on:
+  workflow_run:
+    workflows: ['Build Windows client installer']
+    types: [completed]
+    branches: [main]
+permissions:
+  contents: write
+  actions: read
+jobs:
+  publish-preview:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: AlHassanAcademy-Windows-x64
+          path: installer
+          github-token: ${{ github.token }}
+          run-id: ${{ github.event.workflow_run.id }}
+      - name: Verify installer checksum and Windows smoke result
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import hashlib,json,re
+          from pathlib import Path
+          root=Path('installer')
+          files=list(root.glob('AlHassanAcademy-Setup-*-windows-x64.exe'))
+          assert len(files)==1,'Expected one installer'
+          file=files[0]
+          assert re.fullmatch(r'AlHassanAcademy-Setup-\d+\.\d+\.\d+-windows-x64\.exe',file.name)
+          expected=(root/(file.name+'.sha256')).read_text().split()[0].lower()
+          assert hashlib.sha256(file.read_bytes()).hexdigest()==expected,'Installer checksum mismatch'
+          result=json.loads((root/'windows-smoke-result.json').read_text())
+          for check in ['installation','admin_sign_in','native_flutter_start','packaged_timezone_and_recurrence','update_backup','records_preserved','uninstall_keeps_data']:
+              assert result.get(check)=='passed',f'Windows check did not pass: {check}'
+          PY
+      - name: Publish an unsigned preview for client acceptance testing
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          installer=$(find installer -maxdepth 1 -name 'AlHassanAcademy-Setup-*-windows-x64.exe' -print -quit)
+          filename=$(basename "$installer")
+          version=${filename#AlHassanAcademy-Setup-}
+          version=${version%-windows-x64.exe}
+          tag="windows-preview-${version}-${SOURCE_SHA:0:7}"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "The tested preview for this source revision already exists."
+          else
+            gh release create "$tag" "$installer" "$installer.sha256" installer/windows-smoke-result.json \
+              --target "$SOURCE_SHA" --prerelease \
+              --title "Al Hassan Academy Windows ${version} preview" \
+              --notes-file docs/windows-release-notes.md
+          fi
