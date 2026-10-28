@@ -97,6 +97,10 @@ class DesktopRuntime:
         self.pg_started = False
 
     def initialize(self):
+        if os.name == "nt":
+            # PostgreSQL drops the Administrators group. Grant the current user
+            # explicitly, including when setup was launched from an elevated shell.
+            restrict_directory(self.app_dir)
         restrict_directory(self.data_dir)
         for directory in [self.backups, self.logs]:
             directory.mkdir(exist_ok=True)
