@@ -17,7 +17,7 @@ EDITIONS = {
     "en.sahih": "English · Sahih International",
     "ur.jalandhry": "Urdu · Jalandhry",
 }
-CACHE_DIR = Path(__file__).resolve().parents[1] / ".local" / "quran"
+CACHE_DIR = Path(os.environ.get("ACADEMY_DATA_DIR", Path(__file__).resolve().parents[1] / ".local")) / "quran"
 _lock = asyncio.Lock()
 router = APIRouter(prefix="/api/quran", tags=["Quran"])
 

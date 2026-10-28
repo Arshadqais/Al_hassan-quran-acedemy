@@ -8,3 +8,10 @@
 **/.ruff_cache/
 
 backend/.local/
+
+# Windows installer outputs; client data is never part of a build.
+packaging/windows/bundle/
+packaging/windows/output/
+packaging/windows/build/
+packaging/windows/dist/
+packaging/windows/*.spec

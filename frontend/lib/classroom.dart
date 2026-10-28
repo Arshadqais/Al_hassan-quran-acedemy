@@ -232,6 +232,29 @@ class _ClassroomState extends State<Classroom> {
     }
   }();
 
+  Future<void> toggleScreenShare() async {
+    final local = room.localParticipant;
+    if (local == null) return;
+    if (local.isScreenShareEnabled()) {
+      await local.setScreenShareEnabled(false);
+      return;
+    }
+    String? source;
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.windows) {
+      // The native desktop picker supplies a source ID; browsers use their own picker.
+      // LiveKit is pinned; its experimental picker is used only on native Windows.
+      // ignore: experimental_member_use
+      source = await ScreenSelectDialog.show(context);
+      if (source == null || !mounted) return;
+    }
+    await local.setScreenShareEnabled(
+      true,
+      screenShareCaptureOptions: source == null
+          ? null
+          : ScreenShareCaptureOptions(sourceId: source),
+    );
+  }
+
   Future<void> change(Future<void> Function() action) async {
     if (changing) return;
     setState(() => changing = true);
@@ -442,11 +465,7 @@ class _ClassroomState extends State<Classroom> {
                       local?.isScreenShareEnabled() == true
                           ? 'Stop sharing'
                           : 'Share screen',
-                      () => change(() async {
-                        await local?.setScreenShareEnabled(
-                          !local.isScreenShareEnabled(),
-                        );
-                      }),
+                      () => change(toggleScreenShare),
                     ),
                   FilledButton.icon(
                     style: FilledButton.styleFrom(

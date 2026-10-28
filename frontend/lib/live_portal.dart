@@ -15,6 +15,8 @@ import 'package:http/http.dart' as http;
 const _green = Color(0xFF145B45);
 const _cream = Color(0xFFF8F7F2);
 const _muted = Color(0xFF77867D);
+// Only explicitly packaged native builds may use a loopback API in release.
+const desktopLocalApi = !kIsWeb && bool.fromEnvironment('DESKTOP_LOCAL_API');
 // Local debug sessions use the local API. Published builds require an explicit
 // HTTPS backend URL and never point visitors at their own localhost.
 const academyApiBaseUrl = String.fromEnvironment(
@@ -34,7 +36,7 @@ class AcademyApi {
         uri.host.isNotEmpty &&
         uri.userInfo.isEmpty &&
         (uri.scheme == 'https' ||
-            (kDebugMode &&
+            ((kDebugMode || desktopLocalApi) &&
                 uri.scheme == 'http' &&
                 ['127.0.0.1', 'localhost'].contains(uri.host)));
   }

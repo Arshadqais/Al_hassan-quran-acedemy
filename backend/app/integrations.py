@@ -12,7 +12,7 @@ import aiohttp
 from dotenv import dotenv_values, set_key
 from livekit import api
 
-ENV_PATH = Path(__file__).resolve().parents[1] / ".env"
+ENV_PATH = Path(os.environ.get("ACADEMY_ENV_FILE", Path(__file__).resolve().parents[1] / ".env"))
 
 
 def config():

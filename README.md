@@ -152,3 +152,7 @@ The backend tests cover role/record ownership, private conversations, sessions, 
 This is a working development pilot, not a completed production rollout. The repository does not yet include file uploads, email invitations/recovery, explicit parent consent to read child-teacher conversations, or native mobile apps. Study notes and persisted text messages are supported. Private conversations are visible only to their participants; the app does not silently grant parents or administrators access to other people's conversations.
 
 A real LiveKit call, HTTPS tunnel, off-machine backup destination, and public GitHub Pages deployment need the academy's hosting and service access. The video client and token authorization can be built/tested independently, but an actual two-person media call must be validated using the chosen provider before teaching real learners. No real student records were used in development.
+
+## Windows client installer
+
+A native Flutter Windows admin-host installer build is available in [Actions → Build Windows client installer](https://github.com/Arshadqais/Al_hassan-quran-acedemy/actions/workflows/windows-installer.yml). The workflow packages FastAPI/Python and PostgreSQL, tests installation and update data preservation, and uploads an installer only after the Windows checks pass. It is a preview until the workflow and actual client hardware tests succeed. [Windows handover and update guide](docs/windows-installer.md).

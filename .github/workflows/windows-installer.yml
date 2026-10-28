@@ -1,0 +1,83 @@
+name: Build Windows client installer
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Installer version (three numeric components)
+        default: '0.1.0'
+        required: true
+  push:
+    branches: [main]
+    paths:
+      - 'packaging/windows/**'
+      - 'scripts/desktop_tests/**'
+      - 'frontend/**'
+      - 'backend/**'
+      - '.github/workflows/windows-installer.yml'
+permissions:
+  contents: read
+concurrency:
+  group: windows-installer-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned Flutter SDK
+        shell: pwsh
+        run: |
+          git clone --depth 1 --branch 3.47.8 https://github.com/flutter/flutter.git "$env:RUNNER_TEMP\flutter"
+          if ($LASTEXITCODE -ne 0) { throw 'Flutter checkout failed' }
+          $revision = git -C "$env:RUNNER_TEMP\flutter" rev-parse HEAD
+          if ($revision.Trim() -ne '737ba8f885dc774b53b442759999a312c9461e4e') { throw 'Unexpected Flutter revision' }
+          "$env:RUNNER_TEMP\flutter\bin" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+      - name: Prepare build-only PostgreSQL and Inno Setup
+        shell: pwsh
+        run: |
+          if (-not (Test-Path 'C:\Program Files\PostgreSQL\17\bin\postgres.exe')) {
+            choco install postgresql17 --yes --no-progress --params '/Password:CI-build-only-not-client-879!'
+            if ($LASTEXITCODE -ne 0) { throw 'Could not install build PostgreSQL binaries' }
+          }
+          if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) {
+            choco install innosetup --yes --no-progress
+            if ($LASTEXITCODE -ne 0) { throw 'Could not install Inno Setup on build runner' }
+          }
+      - name: Verify native Flutter source
+        working-directory: frontend
+        shell: pwsh
+        run: |
+          flutter pub get --enforce-lockfile
+          if ($LASTEXITCODE -ne 0) { throw 'Dependency check failed' }
+          flutter analyze
+          if ($LASTEXITCODE -ne 0) { throw 'Flutter analysis failed' }
+          flutter test
+          if ($LASTEXITCODE -ne 0) { throw 'Flutter tests failed' }
+      - name: Build self-contained native Windows installer
+        shell: pwsh
+        env:
+          REQUESTED_VERSION: ${{ inputs.version || '0.1.0' }}
+        run: ./packaging/windows/build.ps1 -Version $env:REQUESTED_VERSION
+      - name: Test launcher safeguards
+        shell: pwsh
+        run: python -m unittest discover -s scripts/desktop_tests -v
+      - name: Install, start, update, and preserve client data
+        shell: pwsh
+        run: |
+          $installer = Get-ChildItem packaging/windows/output/AlHassanAcademy-Setup-*.exe | Select-Object -First 1
+          python packaging/windows/smoke_test.py $installer.FullName
+          if ($LASTEXITCODE -ne 0) { throw 'Windows install/update smoke test failed' }
+      - name: Upload tested installer and checksum
+        uses: actions/upload-artifact@v4
+        with:
+          name: AlHassanAcademy-Windows-x64
+          path: |
+            packaging/windows/output/*.exe
+            packaging/windows/output/*.sha256
+            packaging/windows/output/windows-smoke-result.json
+          if-no-files-found: error
+          retention-days: 30

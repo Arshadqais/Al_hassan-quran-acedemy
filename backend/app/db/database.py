@@ -6,7 +6,8 @@ from dotenv import dotenv_values
 from sqlalchemy import URL, text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-env = {**dotenv_values(Path(__file__).resolve().parents[2] / ".env"), **os.environ}
+ENV_PATH = Path(os.environ.get("ACADEMY_ENV_FILE", Path(__file__).resolve().parents[2] / ".env"))
+env = {**dotenv_values(ENV_PATH), **os.environ}
 DATABASE_URL = env.get("DATABASE_URL") or URL.create(
     drivername="postgresql+asyncpg",
     username=env.get("DATABASE_USER", "academy"),
