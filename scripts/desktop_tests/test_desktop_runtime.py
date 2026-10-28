@@ -39,7 +39,7 @@ class ClientDataTests(unittest.TestCase):
         self.assertNotIn('DATABASE_URL',env)
         self.assertNotIn('LIVEKIT_API_SECRET',env)
         self.assertNotIn('WHATSAPP_ACCESS_TOKEN',env)
-        self.assertEqual(env['ACADEMY_ENV_FILE'],str(self.data/'backend.env'))
+        self.assertEqual(Path(env['ACADEMY_ENV_FILE']).resolve(),(self.data/'backend.env').resolve())
 
     def test_data_cannot_live_inside_replaceable_program_directory(self):
         with self.assertRaises(DesktopError):DesktopRuntime(self.app,self.app/'data')
