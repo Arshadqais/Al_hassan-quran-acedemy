@@ -47,6 +47,12 @@ jobs:
             choco install innosetup --yes --no-progress
             if ($LASTEXITCODE -ne 0) { throw 'Could not install Inno Setup on build runner' }
           }
+      - name: Probe portable PostgreSQL before packaging
+        shell: pwsh
+        run: |
+          python -m pip install python-dotenv==1.2.4
+          python packaging/windows/probe_postgres.py
+          if ($LASTEXITCODE -ne 0) { throw 'Portable PostgreSQL probe failed' }
       - name: Verify native Flutter source
         working-directory: frontend
         shell: pwsh

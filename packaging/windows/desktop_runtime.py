@@ -17,7 +17,9 @@ PG_PORT = 15432
 
 
 class DesktopError(RuntimeError):
-    pass
+    def __init__(self, message, diagnostics=""):
+        super().__init__(message)
+        self.diagnostics = diagnostics
 
 
 def windows_flags():
@@ -28,7 +30,8 @@ def run(command, *, env=None, timeout=120, check=True, input_text=None):
     result = subprocess.run([str(v) for v in command], env=env, input=input_text,
         text=True, capture_output=True, timeout=timeout, creationflags=windows_flags())
     if check and result.returncode:
-        raise DesktopError(f"{Path(str(command[0])).name} could not complete. Check the private log folder or contact your developer.")
+        raise DesktopError(f"{Path(str(command[0])).name} could not complete. Check the private log folder or contact your developer.",
+            f"Exit code: {result.returncode}\n{result.stdout}\n{result.stderr}")
     return result
 
 
