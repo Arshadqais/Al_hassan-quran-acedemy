@@ -32,6 +32,7 @@ def main():
                 for entry in getattr(binary, "DIRECTORY_ENTRY_IMPORT", []):
                     name = entry.dll.decode().lower()
                     target = available.get(name)
+                    findings.append(f"{path.name} imports {name}: {target or 'Windows system'}")
                     if target:
                         if target.parent != runtime.pg_bin:
                             findings.append(f"{path.name} needs {name} located in {target.parent}")
@@ -41,6 +42,19 @@ def main():
         findings = []
         dependencies(runtime.pg("initdb"))
         dependencies(runtime.pg("postgres"))
+        import subprocess
+        import ctypes
+        for executable in (Path(r"C:\Program Files\PostgreSQL\17\bin\initdb.exe"), runtime.pg("initdb")):
+            result = subprocess.run([str(executable), "--version"], capture_output=True, text=True)
+            findings.append(f"Version probe {executable}: {result.returncode} {result.stdout} {result.stderr}")
+        with os.add_dll_directory(str(runtime.pg_bin)):
+            for name in sorted(checked):
+                target = available.get(name)
+                if target and target.suffix == ".dll":
+                    try:
+                        ctypes.WinDLL(str(target))
+                    except OSError as failure:
+                        findings.append(f"LoadLibrary {name}: {failure}")
         details += "\n" + "\n".join(findings)
         for key, value in getattr(runtime, "config", {}).items():
             if value and any(part in key for part in ("PASSWORD", "SECRET", "TOKEN")):
