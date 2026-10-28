@@ -57,6 +57,19 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Flutter analysis failed' }
           flutter test
           if ($LASTEXITCODE -ne 0) { throw 'Flutter tests failed' }
+      - name: Test launcher safeguards
+        shell: pwsh
+        run: |
+          python -m pip install python-dotenv==1.2.4
+          $testLog = Join-Path $env:RUNNER_TEMP 'academy-launcher-tests.log'
+          python -m unittest discover -s scripts/desktop_tests -v 2>&1 | Tee-Object -FilePath $testLog
+          if ($LASTEXITCODE -ne 0) {
+            '### Windows launcher safeguard failures' | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+            '```text' | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+            Get-Content $testLog -Tail 100 | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+            '```' | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+            throw 'Launcher safeguards failed'
+          }
       - name: Build self-contained native Windows installer
         shell: pwsh
         env:
@@ -73,15 +86,19 @@ jobs:
             '```' | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
             throw
           }
-      - name: Test launcher safeguards
-        shell: pwsh
-        run: python -m unittest discover -s scripts/desktop_tests -v
       - name: Install, start, update, and preserve client data
         shell: pwsh
         run: |
           $installer = Get-ChildItem packaging/windows/output/AlHassanAcademy-Setup-*.exe | Select-Object -First 1
-          python packaging/windows/smoke_test.py $installer.FullName
-          if ($LASTEXITCODE -ne 0) { throw 'Windows install/update smoke test failed' }
+          $smokeLog = Join-Path $env:RUNNER_TEMP 'academy-install-smoke.log'
+          python packaging/windows/smoke_test.py $installer.FullName 2>&1 | Tee-Object -FilePath $smokeLog
+          if ($LASTEXITCODE -ne 0) {
+            '### Windows install/update smoke diagnostics' | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+            '```text' | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+            Get-Content $smokeLog -Tail 100 | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+            '```' | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+            throw 'Windows install/update smoke test failed'
+          }
       - name: Upload tested installer and checksum
         uses: actions/upload-artifact@v4
         with:
