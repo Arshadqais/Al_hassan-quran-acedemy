@@ -59,3 +59,20 @@ The actual client's Meta business sender, approved template, permissions, billin
 public webhook subscription, and receipt of a real message on an opted-in phone
 must be verified during [WhatsApp onboarding](whatsapp-reminders.md). No real
 provider credentials were configured in the development environment.
+## Windows client installer — 28 October 2026
+
+Application revision `af76ab5` passed the [Windows workflow](https://github.com/Arshadqais/Al_hassan-quran-acedemy/actions/runs/40680139759):
+Flutter analysis, 26 Flutter tests, 12 launcher safeguards, portable PostgreSQL
+initialization, and native installer compilation. The installed package then
+passed first-admin creation/sign-in, native Flutter process startup, bundled
+timezone/recurrence checks, backup before an update, record preservation through
+reinstallation, and data preservation after uninstall. Test data was disposable
+and isolated from any real academy database.
+
+The [publisher workflow](https://github.com/Arshadqais/Al_hassan-quran-acedemy/actions/runs/40681398199)
+verified the installer checksum and smoke report before publishing the
+[unsigned Windows preview](https://github.com/Arshadqais/Al_hassan-quran-acedemy/releases/tag/windows-preview-0.1.0-af76ab5).
+Physical client camera/microphone/screen-sharing, actual provider calls, public
+HTTPS access, and any migration of existing Mac records still require handover
+verification; this CI result does not claim those operations have happened.
+

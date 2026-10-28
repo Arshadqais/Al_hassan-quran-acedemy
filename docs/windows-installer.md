@@ -12,6 +12,11 @@ a successfully tested downloadable installer. The build first creates a GitHub A
 the checksum and smoke-test report, then creates a clearly marked public preview
 release only after the Windows checks pass.
 
+The first tested package is [Windows 0.1.0 preview](https://github.com/Arshadqais/Al_hassan-quran-acedemy/releases/tag/windows-preview-0.1.0-af76ab5), built from application revision `af76ab5`.
+Its [Windows build and installed-app checks](https://github.com/Arshadqais/Al_hassan-quran-acedemy/actions/runs/40680139759)
+and [checksum-verified publication](https://github.com/Arshadqais/Al_hassan-quran-acedemy/actions/runs/40681398199)
+passed on 28 October 2026. Client hardware acceptance and public HTTPS configuration remain separate handover steps.
+
 ## 1. Build and obtain the installer (developer)
 
 Push the packaging changes to `main`, or open **Actions → Build Windows client

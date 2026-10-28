@@ -155,4 +155,4 @@ A real LiveKit call, HTTPS tunnel, off-machine backup destination, and public Gi
 
 ## Windows client installer
 
-A native Flutter Windows admin-host installer build is available in [Actions → Build Windows client installer](https://github.com/Arshadqais/Al_hassan-quran-acedemy/actions/workflows/windows-installer.yml). The workflow packages FastAPI/Python and PostgreSQL, tests installation and update data preservation, and uploads an installer only after the Windows checks pass. It is a preview until the workflow and actual client hardware tests succeed. [Windows handover and update guide](docs/windows-installer.md).
+Download the [tested Windows preview installer](https://github.com/Arshadqais/Al_hassan-quran-acedemy/releases/tag/windows-preview-0.1.0-af76ab5). It includes native Flutter, FastAPI/Python, and PostgreSQL; the client does not install development tools. Windows CI passed installation, sign-in, native startup, recurring classes, backup, update preservation, and uninstall preservation checks. Physical camera/microphone/screen-sharing acceptance on the client's PC is still required. [Windows handover and update guide](docs/windows-installer.md).
