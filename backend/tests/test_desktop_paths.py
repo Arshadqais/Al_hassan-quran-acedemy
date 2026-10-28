@@ -10,7 +10,7 @@ def test_packaged_backend_uses_client_private_paths(tmp_path):
     process_env=os.environ.copy()
     for key in list(process_env):
         if key.startswith('DATABASE_'):process_env.pop(key)
-    process_env.update(ACADEMY_ENV_FILE=str(private),ACADEMY_DATA_DIR=str(tmp_path/'client-data'))
+    process_env.update(ACADEMY_ENV_FILE=str(private),ACADEMY_DATA_DIR=str(tmp_path/'client-data'), PYTHONTZPATH="")
     code='''from pathlib import Path
 import os
 from app.db.database import DATABASE_URL, ENV_PATH
@@ -21,6 +21,8 @@ assert INTEGRATION_PATH == ENV_PATH
 assert DATABASE_URL.username == 'client_test'
 assert DATABASE_URL.host == '127.0.0.1' and DATABASE_URL.port == 15432
 assert CACHE_DIR == Path(os.environ['ACADEMY_DATA_DIR']) / 'quran'
+from zoneinfo import ZoneInfo
+assert ZoneInfo('Asia/Karachi').key == 'Asia/Karachi'
 print('Client data paths verified')
 '''
     root=Path(__file__).resolve().parents[1]

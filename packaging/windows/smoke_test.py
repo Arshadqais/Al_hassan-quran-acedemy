@@ -1,4 +1,5 @@
 """Windows CI installation/update preservation check, always using isolated data."""
+from datetime import date
 import argparse
 import json
 import os
@@ -40,6 +41,11 @@ def main():
         token = request("/auth/login", {"email": "installer@example.test", "password": "Test-only-installer-credential-879!"})["token"]
         user = request("/users", {"name": "Preserved student", "email": "preserved@example.test", "password": "Test-only-learner-credential-879!", "role": "student"}, token)
         assert user["name"] == "Preserved student"
+        teacher = request("/users", {"name": "CI teacher", "email": "teacher@example.test", "password": "Test-only-teacher-credential-879!", "role": "teacher"}, token)
+        request("/assignments", {"adult_id": teacher["id"], "student_id": user["id"]}, token)
+        request("/schedules", {"title": "Client timezone check", "teacher_id": teacher["id"], "student_ids": [user["id"]],
+            "start_date": date.today().isoformat(), "weekdays": [0,1,2,3,4], "local_time": "09:00", "timezone": "Asia/Karachi"}, token)
+        assert len(request("/classes", token=token)) > 1, "Bundled timezone data/recurrence must work on Windows"
         frontend = subprocess.Popen([str(runtime.frontend)], env=runtime.process_env())
         time.sleep(8)
         assert frontend.poll() is None, "Native Flutter window exited during startup"
@@ -61,7 +67,7 @@ def main():
         assert (data / "postgres" / "PG_VERSION").exists()
         assert (data / "backend.env").exists()
         report = {"installation": "passed", "postgresql": "client-local", "admin_sign_in": "passed",
-            "native_flutter_start": "passed", "update_backup": "passed", "records_preserved": "passed",
+            "native_flutter_start": "passed", "packaged_timezone_and_recurrence": "passed", "update_backup": "passed", "records_preserved": "passed",
             "uninstall_keeps_data": "passed", "scope": "Windows CI; real client hardware still requires acceptance testing"}
         (args.installer.parent / "windows-smoke-result.json").write_text(json.dumps(report, indent=2))
         print(json.dumps(report, indent=2))

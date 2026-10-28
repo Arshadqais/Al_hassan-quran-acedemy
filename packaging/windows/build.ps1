@@ -22,7 +22,7 @@ try {
 $backendArguments = @('-m','PyInstaller','--noconfirm','--clean','--onedir','--name','AlHassanService',
   '--distpath',"$PSScriptRoot\dist",'--workpath',"$PSScriptRoot\build\service",'--specpath',$PSScriptRoot,
   '--paths',"$root\backend",'--collect-submodules','app','--collect-all','asyncpg',
-  '--collect-submodules','livekit','--collect-submodules','uvicorn','--collect-all','greenlet',
+  '--collect-submodules','livekit','--collect-submodules','uvicorn','--collect-all','greenlet','--collect-all','tzdata',
   '--hidden-import','sqlalchemy.dialects.postgresql.asyncpg',
   '--hidden-import','uvicorn.logging','--hidden-import','uvicorn.loops.asyncio',
   '--hidden-import','uvicorn.protocols.http.h11_impl','--hidden-import','uvicorn.protocols.websockets.websockets_impl',
@@ -58,6 +58,7 @@ if (Test-Path "$pythonHome\LICENSE.txt") { Copy-Item "$pythonHome\LICENSE.txt" "
 python -m piplicenses --format=json --with-license-file --no-license-path --output-file="$bundle\licenses\python-packages.json"
 if ($LASTEXITCODE -ne 0) { throw 'Could not generate bundled Python dependency notices.' }
 $commit = (git rev-parse HEAD).Trim()
+if ($LASTEXITCODE -ne 0 -or $commit -notmatch '^[a-f0-9]{40}$') { throw 'Build from a Git checkout with a valid revision.' }
 @{ version = $Version; commit = $commit; postgresql = $pgVersion; architecture = 'windows-x64'; api_port = 18080 } |
   ConvertTo-Json | Set-Content "$bundle\build.json" -Encoding utf8
 $manifest = Get-ChildItem $bundle -File -Recurse | ForEach-Object {

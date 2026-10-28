@@ -61,7 +61,18 @@ jobs:
         shell: pwsh
         env:
           REQUESTED_VERSION: ${{ inputs.version || '0.1.0' }}
-        run: ./packaging/windows/build.ps1 -Version $env:REQUESTED_VERSION
+        run: |
+          $buildLog = Join-Path $env:RUNNER_TEMP 'academy-windows-build.log'
+          try {
+            ./packaging/windows/build.ps1 -Version $env:REQUESTED_VERSION *>&1 | Tee-Object -FilePath $buildLog
+          } catch {
+            '### Windows packaging diagnostics' | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+            '```text' | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+            if (Test-Path $buildLog) { Get-Content $buildLog -Tail 70 | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8 }
+            $_.Exception.Message | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+            '```' | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+            throw
+          }
       - name: Test launcher safeguards
         shell: pwsh
         run: python -m unittest discover -s scripts/desktop_tests -v
