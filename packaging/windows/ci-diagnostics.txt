@@ -1,0 +1,157 @@
+initdb.exe could not complete. Check the private log folder or contact your developer.
+Exit code: 3221225781
+
+
+initdb.exe imports libpq.dll: D:\a\_temp\academy-pg-probe-l_p4wy4e\program\postgres\bin\libpq.dll
+libpq.dll imports ws2_32.dll: Windows system
+libpq.dll imports libintl-9.dll: D:\a\_temp\academy-pg-probe-l_p4wy4e\program\postgres\bin\libintl-9.dll
+libintl-9.dll imports advapi32.dll: Windows system
+libintl-9.dll imports kernel32.dll: Windows system
+libintl-9.dll imports msvcrt.dll: Windows system
+libintl-9.dll imports libwinpthread-1.dll: D:\a\_temp\academy-pg-probe-l_p4wy4e\program\postgres\bin\libwinpthread-1.dll
+libwinpthread-1.dll imports kernel32.dll: Windows system
+libwinpthread-1.dll imports msvcrt.dll: Windows system
+libintl-9.dll imports libiconv-2.dll: D:\a\_temp\academy-pg-probe-l_p4wy4e\program\postgres\bin\libiconv-2.dll
+libiconv-2.dll imports kernel32.dll: Windows system
+libiconv-2.dll imports msvcrt.dll: Windows system
+libpq.dll imports secur32.dll: Windows system
+libpq.dll imports wldap32.dll: Windows system
+libpq.dll imports libssl-3-x64.dll: D:\a\_temp\academy-pg-probe-l_p4wy4e\program\postgres\bin\libssl-3-x64.dll
+libssl-3-x64.dll imports libcrypto-3-x64.dll: D:\a\_temp\academy-pg-probe-l_p4wy4e\program\postgres\bin\libcrypto-3-x64.dll
+libcrypto-3-x64.dll imports ws2_32.dll: Windows system
+libcrypto-3-x64.dll imports advapi32.dll: Windows system
+libcrypto-3-x64.dll imports crypt32.dll: Windows system
+libcrypto-3-x64.dll imports user32.dll: Windows system
+libcrypto-3-x64.dll imports kernel32.dll: Windows system
+libcrypto-3-x64.dll imports vcruntime140.dll: Windows system
+libcrypto-3-x64.dll imports api-ms-win-crt-string-l1-1-0.dll: Windows system
+libcrypto-3-x64.dll imports api-ms-win-crt-stdio-l1-1-0.dll: Windows system
+libcrypto-3-x64.dll imports api-ms-win-crt-convert-l1-1-0.dll: Windows system
+libcrypto-3-x64.dll imports api-ms-win-crt-time-l1-1-0.dll: Windows system
+libcrypto-3-x64.dll imports api-ms-win-crt-utility-l1-1-0.dll: Windows system
+libcrypto-3-x64.dll imports api-ms-win-crt-heap-l1-1-0.dll: Windows system
+libcrypto-3-x64.dll imports api-ms-win-crt-runtime-l1-1-0.dll: Windows system
+libcrypto-3-x64.dll imports api-ms-win-crt-filesystem-l1-1-0.dll: Windows system
+libcrypto-3-x64.dll imports api-ms-win-crt-environment-l1-1-0.dll: Windows system
+libssl-3-x64.dll imports ws2_32.dll: Windows system
+libssl-3-x64.dll imports kernel32.dll: Windows system
+libssl-3-x64.dll imports vcruntime140.dll: Windows system
+libssl-3-x64.dll imports api-ms-win-crt-heap-l1-1-0.dll: Windows system
+libssl-3-x64.dll imports api-ms-win-crt-environment-l1-1-0.dll: Windows system
+libssl-3-x64.dll imports api-ms-win-crt-runtime-l1-1-0.dll: Windows system
+libssl-3-x64.dll imports api-ms-win-crt-time-l1-1-0.dll: Windows system
+libssl-3-x64.dll imports api-ms-win-crt-string-l1-1-0.dll: Windows system
+libssl-3-x64.dll imports api-ms-win-crt-utility-l1-1-0.dll: Windows system
+libssl-3-x64.dll imports api-ms-win-crt-filesystem-l1-1-0.dll: Windows system
+libssl-3-x64.dll imports api-ms-win-crt-convert-l1-1-0.dll: Windows system
+libpq.dll imports libcrypto-3-x64.dll: D:\a\_temp\academy-pg-probe-l_p4wy4e\program\postgres\bin\libcrypto-3-x64.dll
+libpq.dll imports kernel32.dll: Windows system
+libpq.dll imports shell32.dll: Windows system
+libpq.dll imports advapi32.dll: Windows system
+libpq.dll imports vcruntime140.dll: Windows system
+libpq.dll imports api-ms-win-crt-heap-l1-1-0.dll: Windows system
+libpq.dll imports api-ms-win-crt-convert-l1-1-0.dll: Windows system
+libpq.dll imports api-ms-win-crt-string-l1-1-0.dll: Windows system
+libpq.dll imports api-ms-win-crt-stdio-l1-1-0.dll: Windows system
+libpq.dll imports api-ms-win-crt-runtime-l1-1-0.dll: Windows system
+libpq.dll imports api-ms-win-crt-environment-l1-1-0.dll: Windows system
+libpq.dll imports api-ms-win-crt-time-l1-1-0.dll: Windows system
+libpq.dll imports api-ms-win-crt-utility-l1-1-0.dll: Windows system
+libpq.dll imports api-ms-win-crt-math-l1-1-0.dll: Windows system
+libpq.dll imports api-ms-win-crt-locale-l1-1-0.dll: Windows system
+libpq.dll imports api-ms-win-crt-filesystem-l1-1-0.dll: Windows system
+initdb.exe imports ws2_32.dll: Windows system
+initdb.exe imports libintl-9.dll: D:\a\_temp\academy-pg-probe-l_p4wy4e\program\postgres\bin\libintl-9.dll
+initdb.exe imports icuuc67.dll: D:\a\_temp\academy-pg-probe-l_p4wy4e\program\postgres\bin\icuuc67.dll
+icuuc67.dll imports icudt67.dll: D:\a\_temp\academy-pg-probe-l_p4wy4e\program\postgres\bin\icudt67.dll
+icuuc67.dll imports kernel32.dll: Windows system
+icuuc67.dll imports msvcp140.dll: Windows system
+icuuc67.dll imports vcruntime140.dll: Windows system
+icuuc67.dll imports api-ms-win-crt-runtime-l1-1-0.dll: Windows system
+icuuc67.dll imports api-ms-win-crt-string-l1-1-0.dll: Windows system
+icuuc67.dll imports api-ms-win-crt-time-l1-1-0.dll: Windows system
+icuuc67.dll imports api-ms-win-crt-math-l1-1-0.dll: Windows system
+icuuc67.dll imports api-ms-win-crt-convert-l1-1-0.dll: Windows system
+icuuc67.dll imports api-ms-win-crt-stdio-l1-1-0.dll: Windows system
+icuuc67.dll imports api-ms-win-crt-environment-l1-1-0.dll: Windows system
+icuuc67.dll imports api-ms-win-crt-heap-l1-1-0.dll: Windows system
+icuuc67.dll imports api-ms-win-crt-utility-l1-1-0.dll: Windows system
+initdb.exe imports kernel32.dll: Windows system
+initdb.exe imports advapi32.dll: Windows system
+initdb.exe imports vcruntime140.dll: Windows system
+initdb.exe imports api-ms-win-crt-environment-l1-1-0.dll: Windows system
+initdb.exe imports api-ms-win-crt-time-l1-1-0.dll: Windows system
+initdb.exe imports api-ms-win-crt-string-l1-1-0.dll: Windows system
+initdb.exe imports api-ms-win-crt-stdio-l1-1-0.dll: Windows system
+initdb.exe imports api-ms-win-crt-heap-l1-1-0.dll: Windows system
+initdb.exe imports api-ms-win-crt-runtime-l1-1-0.dll: Windows system
+initdb.exe imports api-ms-win-crt-convert-l1-1-0.dll: Windows system
+initdb.exe imports api-ms-win-crt-locale-l1-1-0.dll: Windows system
+initdb.exe imports api-ms-win-crt-filesystem-l1-1-0.dll: Windows system
+initdb.exe imports api-ms-win-crt-math-l1-1-0.dll: Windows system
+postgres.exe imports ws2_32.dll: Windows system
+postgres.exe imports icuuc67.dll: D:\a\_temp\academy-pg-probe-l_p4wy4e\program\postgres\bin\icuuc67.dll
+postgres.exe imports icuin67.dll: D:\a\_temp\academy-pg-probe-l_p4wy4e\program\postgres\bin\icuin67.dll
+icuin67.dll imports icuuc67.dll: D:\a\_temp\academy-pg-probe-l_p4wy4e\program\postgres\bin\icuuc67.dll
+icuin67.dll imports kernel32.dll: Windows system
+icuin67.dll imports vcruntime140.dll: Windows system
+icuin67.dll imports api-ms-win-crt-convert-l1-1-0.dll: Windows system
+icuin67.dll imports api-ms-win-crt-runtime-l1-1-0.dll: Windows system
+icuin67.dll imports api-ms-win-crt-string-l1-1-0.dll: Windows system
+icuin67.dll imports api-ms-win-crt-stdio-l1-1-0.dll: Windows system
+icuin67.dll imports api-ms-win-crt-math-l1-1-0.dll: Windows system
+icuin67.dll imports api-ms-win-crt-utility-l1-1-0.dll: Windows system
+icuin67.dll imports api-ms-win-crt-environment-l1-1-0.dll: Windows system
+icuin67.dll imports api-ms-win-crt-heap-l1-1-0.dll: Windows system
+postgres.exe imports wldap32.dll: Windows system
+postgres.exe imports libintl-9.dll: D:\a\_temp\academy-pg-probe-l_p4wy4e\program\postgres\bin\libintl-9.dll
+postgres.exe imports libxml2.dll: D:\a\_temp\academy-pg-probe-l_p4wy4e\program\postgres\bin\libxml2.dll
+libxml2.dll imports bcrypt.dll: Windows system
+libxml2.dll imports zlib1.dll: D:\a\_temp\academy-pg-probe-l_p4wy4e\program\postgres\bin\zlib1.dll
+zlib1.dll imports kernel32.dll: Windows system
+zlib1.dll imports vcruntime140.dll: Windows system
+zlib1.dll imports api-ms-win-crt-stdio-l1-1-0.dll: Windows system
+zlib1.dll imports api-ms-win-crt-heap-l1-1-0.dll: Windows system
+zlib1.dll imports api-ms-win-crt-convert-l1-1-0.dll: Windows system
+zlib1.dll imports api-ms-win-crt-string-l1-1-0.dll: Windows system
+zlib1.dll imports api-ms-win-crt-runtime-l1-1-0.dll: Windows system
+libxml2.dll imports kernel32.dll: Windows system
+libxml2.dll imports vcruntime140.dll: Windows system
+libxml2.dll imports api-ms-win-crt-stdio-l1-1-0.dll: Windows system
+libxml2.dll imports api-ms-win-crt-string-l1-1-0.dll: Windows system
+libxml2.dll imports api-ms-win-crt-utility-l1-1-0.dll: Windows system
+libxml2.dll imports api-ms-win-crt-runtime-l1-1-0.dll: Windows system
+libxml2.dll imports api-ms-win-crt-heap-l1-1-0.dll: Windows system
+libxml2.dll imports api-ms-win-crt-filesystem-l1-1-0.dll: Windows system
+libxml2.dll imports api-ms-win-crt-environment-l1-1-0.dll: Windows system
+libxml2.dll imports api-ms-win-crt-convert-l1-1-0.dll: Windows system
+libxml2.dll imports api-ms-win-crt-math-l1-1-0.dll: Windows system
+postgres.exe imports liblz4.dll: D:\a\_temp\academy-pg-probe-l_p4wy4e\program\postgres\bin\liblz4.dll
+liblz4.dll imports vcruntime140.dll: Windows system
+liblz4.dll imports api-ms-win-crt-heap-l1-1-0.dll: Windows system
+liblz4.dll imports api-ms-win-crt-runtime-l1-1-0.dll: Windows system
+liblz4.dll imports kernel32.dll: Windows system
+postgres.exe imports libssl-3-x64.dll: D:\a\_temp\academy-pg-probe-l_p4wy4e\program\postgres\bin\libssl-3-x64.dll
+postgres.exe imports libcrypto-3-x64.dll: D:\a\_temp\academy-pg-probe-l_p4wy4e\program\postgres\bin\libcrypto-3-x64.dll
+postgres.exe imports libzstd.dll: D:\a\_temp\academy-pg-probe-l_p4wy4e\program\postgres\bin\libzstd.dll
+libzstd.dll imports kernel32.dll: Windows system
+postgres.exe imports secur32.dll: Windows system
+postgres.exe imports kernel32.dll: Windows system
+postgres.exe imports advapi32.dll: Windows system
+postgres.exe imports vcruntime140.dll: Windows system
+postgres.exe imports api-ms-win-crt-string-l1-1-0.dll: Windows system
+postgres.exe imports api-ms-win-crt-math-l1-1-0.dll: Windows system
+postgres.exe imports api-ms-win-crt-utility-l1-1-0.dll: Windows system
+postgres.exe imports api-ms-win-crt-stdio-l1-1-0.dll: Windows system
+postgres.exe imports api-ms-win-crt-runtime-l1-1-0.dll: Windows system
+postgres.exe imports api-ms-win-crt-time-l1-1-0.dll: Windows system
+postgres.exe imports api-ms-win-crt-convert-l1-1-0.dll: Windows system
+postgres.exe imports api-ms-win-crt-heap-l1-1-0.dll: Windows system
+postgres.exe imports api-ms-win-crt-environment-l1-1-0.dll: Windows system
+postgres.exe imports api-ms-win-crt-locale-l1-1-0.dll: Windows system
+postgres.exe imports api-ms-win-crt-multibyte-l1-1-0.dll: Windows system
+postgres.exe imports api-ms-win-crt-filesystem-l1-1-0.dll: Windows system
+Version probe C:\Program Files\PostgreSQL\17\bin\initdb.exe: 0 initdb (PostgreSQL) 17.11
+ 
+Version probe D:\a\_temp\academy-pg-probe-l_p4wy4e\program\postgres\bin\initdb.exe: 0 initdb (PostgreSQL) 17.11
+ 
