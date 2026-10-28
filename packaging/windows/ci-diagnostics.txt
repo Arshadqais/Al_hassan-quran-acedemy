@@ -1,0 +1,4 @@
+initdb.exe could not complete. Check the private log folder or contact your developer.
+Exit code: 3221225781
+
+
