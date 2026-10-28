@@ -15,7 +15,7 @@ on:
       - 'backend/**'
       - '.github/workflows/windows-installer.yml'
 permissions:
-  contents: read
+  contents: write
 concurrency:
   group: windows-installer-${{ github.ref }}
   cancel-in-progress: true
@@ -61,15 +61,8 @@ jobs:
         shell: pwsh
         run: |
           python -m pip install python-dotenv==1.2.4
-          $testLog = Join-Path $env:RUNNER_TEMP 'academy-launcher-tests.log'
-          python -m unittest discover -s scripts/desktop_tests -v 2>&1 | Tee-Object -FilePath $testLog
-          if ($LASTEXITCODE -ne 0) {
-            '### Windows launcher safeguard failures' | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
-            '```text' | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
-            Get-Content $testLog -Tail 100 | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
-            '```' | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
-            throw 'Launcher safeguards failed'
-          }
+          python scripts/desktop_tests/run_ci.py
+          if ($LASTEXITCODE -ne 0) { throw 'Launcher safeguards failed; see CI diagnostic report' }
       - name: Build self-contained native Windows installer
         shell: pwsh
         env:
@@ -83,6 +76,7 @@ jobs:
             '```text' | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
             if (Test-Path $buildLog) { Get-Content $buildLog -Tail 70 | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8 }
             $_.Exception.Message | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+            Get-Content $buildLog -Tail 100 | Set-Content packaging/windows/ci-diagnostics.txt -Encoding utf8
             '```' | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
             throw
           }
@@ -97,6 +91,7 @@ jobs:
             '```text' | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
             Get-Content $smokeLog -Tail 100 | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
             '```' | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+            Get-Content $smokeLog -Tail 100 | Set-Content packaging/windows/ci-diagnostics.txt -Encoding utf8
             throw 'Windows install/update smoke test failed'
           }
       - name: Upload tested installer and checksum
@@ -109,3 +104,17 @@ jobs:
             packaging/windows/output/windows-smoke-result.json
           if-no-files-found: error
           retention-days: 30
+      - name: Preserve isolated CI diagnostics on a separate branch
+        if: failure()
+        shell: pwsh
+        run: |
+          $files = @('packaging/windows/ci-result.json','packaging/windows/ci-diagnostics.txt') | Where-Object { Test-Path $_ }
+          if ($files.Count -gt 0) {
+            $branch = "installer-ci-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT"
+            git switch -c $branch
+            git config user.name 'Academy installer CI'
+            git config user.email 'github-actions[bot]@users.noreply.github.com'
+            foreach ($file in $files) { git add -- $file }
+            git commit -m 'Preserve isolated Windows build diagnostics'
+            git push origin "HEAD:$branch"
+          }
