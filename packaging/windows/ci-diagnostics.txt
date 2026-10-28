@@ -1,0 +1,13 @@
+Traceback (most recent call last):
+  File "D:\a\Al_hassan-quran-acedemy\Al_hassan-quran-acedemy\packaging\windows\smoke_test.py", line 81, in <module>
+    main()
+  File "D:\a\Al_hassan-quran-acedemy\Al_hassan-quran-acedemy\packaging\windows\smoke_test.py", line 38, in main
+    assert runtime.prepare() is False
+           ^^^^^^^^^^^^^^^^^
+  File "D:\a\Al_hassan-quran-acedemy\Al_hassan-quran-acedemy\packaging\windows\desktop_runtime.py", line 179, in prepare
+    self.start_postgres()
+  File "D:\a\Al_hassan-quran-acedemy\Al_hassan-quran-acedemy\packaging\windows\desktop_runtime.py", line 119, in start_postgres
+    run([self.pg("initdb"), "-D", self.cluster, "-U", "academy", "--encoding=UTF8",
+  File "D:\a\Al_hassan-quran-acedemy\Al_hassan-quran-acedemy\packaging\windows\desktop_runtime.py", line 31, in run
+    raise DesktopError(f"{Path(str(command[0])).name} could not complete. Check the private log folder or contact your developer.")
+desktop_runtime.DesktopError: initdb.exe could not complete. Check the private log folder or contact your developer.
