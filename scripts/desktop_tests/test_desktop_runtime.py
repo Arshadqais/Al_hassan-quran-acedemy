@@ -12,6 +12,11 @@ from desktop_runtime import DesktopRuntime, DesktopError, run
 
 
 class ProcessTests(unittest.TestCase):
+    def test_background_child_does_not_hold_command_output_open(self):
+        code = "import subprocess,sys; subprocess.Popen([sys.executable,'-c','import time; time.sleep(2)']); print('started')"
+        result = run([sys.executable, "-c", code], timeout=1)
+        self.assertEqual(result.stdout.strip(), "started")
+
     def test_private_input_uses_stdin(self):
         result = run([sys.executable, "-c", "import sys; print(len(sys.stdin.read()))"], input_text="private")
         self.assertEqual(result.stdout.strip(), "7")

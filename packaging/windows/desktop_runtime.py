@@ -27,24 +27,32 @@ def windows_flags():
 
 
 def run(command, *, env=None, timeout=120, check=True, input_text=None):
-    process = subprocess.Popen([str(v) for v in command], env=env,
-        stdin=subprocess.PIPE if input_text is not None else subprocess.DEVNULL,
-        text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, creationflags=windows_flags())
-    try:
-        stdout, stderr = process.communicate(input=input_text, timeout=timeout)
-    except subprocess.TimeoutExpired as exc:
-        if os.name == "nt":
-            subprocess.run(["taskkill", "/PID", str(process.pid), "/T", "/F"],
-                capture_output=True, timeout=15, creationflags=windows_flags())
-        else:
-            process.kill()
+    # PostgreSQL's Windows background child can inherit output handles. Files
+    # let us wait for the command itself without waiting for pipe EOF from a
+    # long-running server. Output remains private and is read only on completion.
+    with tempfile.TemporaryFile(mode="w+", encoding="utf-8", errors="replace") as output, \
+            tempfile.TemporaryFile(mode="w+", encoding="utf-8", errors="replace") as errors:
+        process = subprocess.Popen([str(v) for v in command], env=env,
+            stdin=subprocess.PIPE if input_text is not None else subprocess.DEVNULL,
+            text=True, stdout=output, stderr=errors, creationflags=windows_flags())
+        timed_out = None
         try:
-            stdout, stderr = process.communicate(timeout=10)
-        except subprocess.TimeoutExpired:
-            stdout, stderr = exc.stdout or "", exc.stderr or ""
-        raise DesktopError(f"{Path(str(command[0])).name} timed out. Startup was stopped.",
-            f"{stdout}\n{stderr}") from exc
-    result = subprocess.CompletedProcess(command, process.returncode, stdout, stderr)
+            process.communicate(input=input_text, timeout=timeout)
+        except subprocess.TimeoutExpired as exc:
+            timed_out = exc
+            if os.name == "nt":
+                subprocess.run(["taskkill", "/PID", str(process.pid), "/T", "/F"],
+                    capture_output=True, timeout=15, creationflags=windows_flags())
+            else:
+                process.kill()
+            process.wait(timeout=10)
+        output.seek(0)
+        errors.seek(0)
+        stdout, stderr = output.read(), errors.read()
+        if timed_out:
+            raise DesktopError(f"{Path(str(command[0])).name} timed out. Startup was stopped.",
+                f"{stdout}\n{stderr}") from timed_out
+        result = subprocess.CompletedProcess(command, process.returncode, stdout, stderr)
     if check and result.returncode:
         raise DesktopError(f"{Path(str(command[0])).name} could not complete. Check the private log folder or contact your developer.",
             f"Exit code: {result.returncode}\n{result.stdout}\n{result.stderr}")
