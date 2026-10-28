@@ -21,6 +21,27 @@ def main():
         print("Portable PostgreSQL initialization and authenticated connection passed")
     except Exception as exc:
         details = str(exc) + "\n" + getattr(exc, "diagnostics", "")
+        import pefile
+        available = {p.name.lower(): p for p in (app / "postgres").rglob("*") if p.is_file()}
+        checked = set()
+        def dependencies(path):
+            if path.name.lower() in checked:
+                return
+            checked.add(path.name.lower())
+            with pefile.PE(str(path)) as binary:
+                for entry in getattr(binary, "DIRECTORY_ENTRY_IMPORT", []):
+                    name = entry.dll.decode().lower()
+                    target = available.get(name)
+                    if target:
+                        if target.parent != runtime.pg_bin:
+                            findings.append(f"{path.name} needs {name} located in {target.parent}")
+                        dependencies(target)
+                    elif not name.startswith(("api-ms-", "ext-ms-")) and not (Path(os.environ["WINDIR"]) / "System32" / name).exists():
+                        findings.append(f"{path.name} missing dependency: {name}")
+        findings = []
+        dependencies(runtime.pg("initdb"))
+        dependencies(runtime.pg("postgres"))
+        details += "\n" + "\n".join(findings)
         for key, value in getattr(runtime, "config", {}).items():
             if value and any(part in key for part in ("PASSWORD", "SECRET", "TOKEN")):
                 details = details.replace(value, "[redacted]")
