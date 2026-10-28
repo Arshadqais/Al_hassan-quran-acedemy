@@ -155,4 +155,8 @@ A real LiveKit call, HTTPS tunnel, off-machine backup destination, and public Gi
 
 ## Windows client installer
 
+For Android/iPhone home-screen installation and shared desktop access, see
+[Desktop and phones](docs/desktop-and-phones.md). Phones connect to the client's
+admin PC through its public HTTPS API; they do not host another database.
+
 Download the [tested Windows preview installer](https://github.com/Arshadqais/Al_hassan-quran-acedemy/releases/tag/windows-preview-0.1.0-af76ab5). It includes native Flutter, FastAPI/Python, and PostgreSQL; the client does not install development tools. Windows CI passed installation, sign-in, native startup, recurring classes, backup, update preservation, and uninstall preservation checks. Physical camera/microphone/screen-sharing acceptance on the client's PC is still required. [Windows handover and update guide](docs/windows-installer.md).

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import 'live_portal.dart';
 import 'academy_design.dart';
+import 'install_help.dart';
 
 const green = Color(0xFF145B45);
 const dark = Color(0xFF143B30);
@@ -368,6 +370,15 @@ class _AcademyShellState extends State<AcademyShell> {
             ),
           ),
           const SizedBox(height: 18),
+          if (kIsWeb)
+            TextButton.icon(
+              onPressed: () => showDialog<void>(
+                context: context,
+                builder: (_) => const AcademyInstallHelp(),
+              ),
+              icon: const Icon(Icons.install_mobile_outlined),
+              label: const Text('Install the academy app'),
+            ),
           const Text(
             'A place for students, teachers, and families.',
             textAlign: TextAlign.center,

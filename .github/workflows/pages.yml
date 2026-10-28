@@ -28,7 +28,7 @@ jobs:
       - run: flutter test
         working-directory: frontend
       - name: Build academy website
-        run: flutter build web --release --base-href /Al_hassan-quran-acedemy/ --no-web-resources-cdn --dart-define=API_BASE_URL="$ACADEMY_API_BASE_URL"
+        run: flutter build web --release --base-href /Al_hassan-quran-acedemy/ --pwa-strategy=none --no-web-resources-cdn --dart-define=API_BASE_URL="$ACADEMY_API_BASE_URL"
         env:
           ACADEMY_API_BASE_URL: ${{ vars.ACADEMY_API_BASE_URL }}
         working-directory: frontend

@@ -76,3 +76,16 @@ Physical client camera/microphone/screen-sharing, actual provider calls, public
 HTTPS access, and any migration of existing Mac records still require handover
 verification; this CI result does not claim those operations have happened.
 
+## Installable desktop and phone website — 28 October 2026
+
+Flutter analysis, all 26 Flutter tests, and the release web build pass. Browser
+checks at 1440×1000 and 390×844 passed the installation guide, manifest scope and
+PNG dimensions, Chromium installation eligibility with no reported errors,
+offline navigation and reconnection, and absence of JavaScript errors. Cache
+Storage contained only the public offline notice, with no API responses.
+
+These checks use Chromium with a phone viewport, not physical Android or iPhone
+devices. Safari home-screen installation and real device media permissions/calls
+still require acceptance testing. A reachable client-owned HTTPS backend remains
+necessary for live accounts. See [desktop and phones](desktop-and-phones.md).
+
