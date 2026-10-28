@@ -4,7 +4,7 @@ from pathlib import Path
 import shutil
 import tempfile
 
-from desktop_runtime import DesktopRuntime
+from desktop_runtime import DesktopRuntime, restrict_directory
 
 
 def main():
@@ -15,6 +15,9 @@ def main():
     for name in ("bin", "lib", "share"):
         shutil.copytree(Path(r"C:\Program Files\PostgreSQL\17") / name, app / "postgres" / name)
     runtime = DesktopRuntime(app, root / "client-data")
+    # GitHub's elevated runner temp tree can otherwise grant access only through
+    # Administrators, which PostgreSQL deliberately removes from its token.
+    restrict_directory(app)
     try:
         runtime.initialize()
         runtime.start_postgres()
